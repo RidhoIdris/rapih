@@ -15,11 +15,13 @@ auth. Screens are pixel-faithful recreations of an approved HTML/CSS design
 handoff; the visual system is fully captured in `src/theme`.
 
 Currently implemented: the **auth flow** (splash, login, 3-step register,
-done), **Beranda**, **Tanya** (AI chat), **Dompet** (list/detail/add), and
-the **Aktivitas / Scan Struk / Rutin** section (transaksi list/detail/add,
-scan-struk camera + review, recurring list/detail + tandai-bayar sheet).
-Everything else (budget, goal, asset, profile, weekly-review) is yet to be
-built on this foundation. Source designs live in the handoff `screens/*.jsx`
+done), **Beranda**, **Tanya** (AI chat), **Dompet** (list/detail/add), the
+**Aktivitas / Scan Struk / Rutin** section (transaksi list/detail/add,
+scan-struk camera + review, recurring list/detail/add + tandai-bayar
+sheet), the **Profil** section (saya, pengaturan, notifikasi), and the
+**Budget / Goal** hub (envelope buckets + goals list/detail/add).
+Everything else (asset, weekly-review) is yet to be built on this
+foundation. Source designs live in the handoff `screens/*.jsx`
 (Tanya = `copilot.jsx`, Dompet = `wallet.jsx` + `addDompet.jsx`).
 Bank/e-wallet **brand colors are data** (kept in screen-local arrays), not
 `@/theme` tokens — they're external brand identity, not the design system.
@@ -69,8 +71,11 @@ src/
                                           Segmented "Aktivitas | Rutin"
                                           (mode from `?mode=rutin` param);
                                           Rutin mode renders <RutinPanel/>.
-                                          FAB → inline chooser (Tulis manual
-                                          / Scan struk). Has TabBar.
+                                          FAB is mode-aware: Aktivitas →
+                                          inline chooser (Tulis manual /
+                                          Scan struk); Rutin → push direct
+                                          to /(app)/tambah-rutin (single
+                                          destination, no chooser).
       screens/transaksi-detail-screen.tsx tx detail
       screens/tambah-transaksi-screen.tsx add tx (faux amount + caret)
     scan/
@@ -83,6 +88,32 @@ src/
       screens/recurring-detail-screen.tsx  KPR detail (solid #0060af + Glow)
       screens/tandai-bayar-screen.tsx      bottom-sheet (transparentModal;
                                            NO Screen; own StatusBar light)
+      screens/tambah-rutin-screen.tsx      add recurring (Cicilan/Asuransi/
+                                           Langganan segmented; faux amount
+                                           + caret; frequency picker)
+    budget/
+      components/budget-panel.tsx          envelope buckets w/ progress
+                                           bars (REWRITE — replaces the
+                                           original bento "water-line" mock)
+      components/goals-panel.tsx           goals card grid + filter chips
+      screens/budget-screen.tsx            BUDGET HUB — a TabBar tab.
+                                           Segmented "Budget | Goal"
+                                           (mode from `?mode=goal` param);
+                                           FAB is mode-aware: Goal → push
+                                           /(app)/tambah-goal; Budget →
+                                           hidden (deferred until a
+                                           tambah-budget screen exists).
+      screens/goal-detail-screen.tsx       single goal detail (moss hero +
+                                           ritme nabung bars)
+      screens/tambah-goal-screen.tsx       create goal (preview + form +
+                                           icon picker + AI rhythm)
+    profile/
+      screens/saya-screen.tsx              profile tab (TabBar) — gear in
+                                           header → /(app)/pengaturan
+      screens/pengaturan-screen.tsx        settings (AI persona / notif
+                                           toggles / display selects)
+      screens/notifikasi-screen.tsx        notification feed (grouped Hari
+                                           ini / Minggu ini)
   app/          ROUTES ONLY — thin files that re-export a feature screen
     _layout.tsx          fonts + splash gate + providers
     index.tsx            redirect → /(auth)/splash
@@ -91,19 +122,23 @@ src/
     (app)/_layout.tsx    main-app Stack (post-auth)
     (app)/beranda.tsx    → Beranda
     (app)/tanya.tsx      → Tanya (TabBar center button)
+    (app)/budget.tsx     → Budget hub (TabBar tab; `?mode=goal` for
+                           Goal mode)
     (app)/transaksi.tsx  → Transaksi hub (TabBar tab; `?mode=rutin` for
                            Rutin mode — Beranda "Tagihan" tile uses this)
     (app)/dompet.tsx · dompet-detail.tsx · tambah-dompet.tsx
     (app)/transaksi-detail.tsx · tambah-transaksi.tsx (from hub FAB)
     (app)/scan-struk.tsx · scan-struk-review.tsx (from hub FAB / Beranda tile)
     (app)/rutin-detail.tsx · tandai-bayar.tsx (transparentModal in _layout)
+    (app)/tambah-rutin.tsx (from Rutin FAB / dashed "Tambah tagihan rutin")
+    (app)/goal-detail.tsx · tambah-goal.tsx (from Budget hub Goal mode)
+    (app)/saya.tsx · pengaturan.tsx · notifikasi.tsx
 ```
 
 **Navigation**: `<TabBar>` self-routes via its internal `ROUTES` map
-(`beranda`/`transaksi`/`tanya` built; `budget`/`saya` buzz-only until built).
-Callers just render `<TabBar active="..." />` — do NOT pass `onTab` unless
-overriding. Tabs: Beranda · Budget · ⟨Tanya⟩ · Transaksi · Saya (the old
-`kebiasaan` tab was replaced by `transaksi`).
+(`beranda`/`budget`/`transaksi`/`tanya`/`saya` all wired). Callers just
+render `<TabBar active="..." />` — do NOT pass `onTab` unless overriding.
+Tabs: Beranda · Budget · ⟨Tanya⟩ · Transaksi · Saya.
 
 **Design figures & accents** (added for Beranda, reuse everywhere):
 - `textVariants.figureXL/figureL/figureM/figureS` — serif (Bricolage) money &

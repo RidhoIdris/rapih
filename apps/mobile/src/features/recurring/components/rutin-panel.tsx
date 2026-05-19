@@ -222,7 +222,10 @@ export function RutinPanel() {
 
       {/* add dashed */}
       <Pressable
-        onPress={() => haptics.tap()}
+        onPress={() => {
+          haptics.tap();
+          router.push('/(app)/tambah-rutin' as Href);
+        }}
         style={{
           marginHorizontal: 18,
           marginTop: 18,

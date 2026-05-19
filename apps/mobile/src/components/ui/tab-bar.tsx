@@ -22,6 +22,7 @@ const TABS: SideTab[] = [
 /** Tabs that have a real route. Others (not built yet) only buzz. */
 const ROUTES: Partial<Record<TabId, Href>> = {
   beranda: '/(app)/beranda' as Href,
+  budget: '/(app)/budget' as Href,
   transaksi: '/(app)/transaksi' as Href,
   tanya: '/(app)/tanya' as Href,
   saya: '/(app)/saya' as Href,

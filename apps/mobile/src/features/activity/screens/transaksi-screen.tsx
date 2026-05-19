@@ -302,10 +302,15 @@ export function TransaksiScreen() {
         )}
       </Screen>
 
-      {/* FAB */}
+      {/* FAB — in Aktivitas mode opens an inline chooser; in Rutin mode
+          there's only one add destination so it goes there directly. */}
       <Pressable
         onPress={() => {
           haptics.tap();
+          if (mode === 'rutin') {
+            router.push('/(app)/tambah-rutin' as Href);
+            return;
+          }
           setAddOpen((v) => !v);
         }}
         style={{
@@ -320,11 +325,15 @@ export function TransaksiScreen() {
           justifyContent: 'center',
           boxShadow: '0 8px 22px rgba(31,42,31,0.32)',
         }}>
-        <Icon name={addOpen ? 'x' : 'plus'} size={addOpen ? 14 : 18} color={palette.lime} />
+        <Icon
+          name={mode === 'aktivitas' && addOpen ? 'x' : 'plus'}
+          size={mode === 'aktivitas' && addOpen ? 14 : 18}
+          color={palette.lime}
+        />
       </Pressable>
 
-      {/* add chooser */}
-      {addOpen && (
+      {/* add chooser — Aktivitas only */}
+      {mode === 'aktivitas' && addOpen && (
         <>
           <Pressable
             onPress={() => setAddOpen(false)}
