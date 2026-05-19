@@ -1,3 +1,95 @@
-# Expo HAS CHANGED
+# Rapih Mobile — agent guide
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v55.0.0/ before writing any code.
+## Expo HAS CHANGED
+
+This app is **Expo SDK 55 / React Native 0.83 / Expo Router v5 / Reanimated 4**.
+Your training data is older than this. Read the exact versioned docs at
+https://docs.expo.dev/versions/v55.0.0/ before writing any native/config code.
+
+## What this app is
+
+Rapih is an AI personal-finance app for Indonesian Gen-Z (Bahasa Indonesia UI,
+IDR). This codebase is a **UI-only** build — there is NO backend, NO API, NO
+auth. Screens are pixel-faithful recreations of an approved HTML/CSS design
+(white base + pastel mint). The source design lives in the Claude Design
+handoff; the visual system is fully captured in `src/theme`.
+
+Currently implemented: the **auth flow** only — splash, login, 3-step register,
+done. Everything else (home, dompet, transaksi, goal, asset, profile, etc.) is
+yet to be built on this foundation.
+
+## Stack (decided — do not swap without reason)
+
+- **Navigation**: Expo Router v5, file-based. Routes in `src/app` ONLY.
+- **State**: Zustand (`src/features/*/...-store.ts`). Lightweight, no providers.
+- **Styling**: central design tokens + typed primitives. **Inline styles only**
+  (RN has no CSS/Tailwind here). Never hardcode a color/size — pull from
+  `@/theme`.
+- **Icons**: `react-native-svg`, ported in `src/components/icons/icon.tsx`.
+- **Fonts**: `@expo-google-fonts/*` via `src/lib/fonts.ts` (Bricolage
+  Grotesque = display, Plus Jakarta Sans = UI, JetBrains Mono = figures).
+- **Haptics**: `expo-haptics` wrapped in `src/lib/haptics.ts` (iOS-only no-op).
+
+## Directory map
+
+```
+src/
+  theme/        tokens.ts (color/space/radius/shadow) · typography.ts · index.ts
+  lib/          fonts.ts · money.ts (rupiah) · haptics.ts
+  components/
+    ui/         Text Button Card Screen Field Chip Caret Glow ProgressDots
+                BackButton LabeledDivider  ← generic primitives, import via @/components/ui
+    brand/      RapihMark RapihWordmark Monogram
+    icons/      icon.tsx  ← <Icon name=... />, the only place raw <Svg> lives
+  features/
+    auth/
+      signup-store.ts          zustand wizard state (seeded w/ design sample data)
+      components/step-header.tsx  feature-local shared piece
+      screens/*.tsx            screen compositions (NOT routes)
+  app/          ROUTES ONLY — thin files that re-export a feature screen
+    _layout.tsx          fonts + splash gate + providers
+    index.tsx            redirect → /(auth)/splash
+    (auth)/_layout.tsx   auth Stack
+    (auth)/...            splash login register/email register/name register/income done
+```
+
+## Conventions (follow these to stay consistent)
+
+1. **Routes are dumirror files.** A file in `src/app` is one line:
+   `export { XScreen as default } from '@/features/x/screens/x-screen';`
+   The real UI lives in `features/<domain>/screens`. Never put components,
+   utils or types inside `src/app` (Expo Router anti-pattern).
+2. **All text** goes through `<Text variant="...">` from `@/components/ui`.
+   Add a new entry to `textVariants` in `theme/typography.ts` rather than
+   ad-hoc `fontSize`.
+3. **All color/spacing** comes from `palette` / `space` / `radius` / `shadow`
+   in `@/theme`. A redesign should be a tokens-only change.
+4. **Shadows** use the CSS `boxShadow` string prop (never legacy RN
+   `shadow*`/`elevation`).
+5. **New fonts/weights**: add to BOTH `theme/typography.ts` (`fontFamily`) and
+   `lib/fonts.ts` (`FONT_MAP`) — keys must match.
+6. **Screens** are wrapped in `<Screen>` which handles safe-area + scroll.
+   Use the `flex:1` spacer pattern to pin a CTA to the bottom (see any
+   auth screen).
+7. After changes: `npx tsc --noEmit` and `npx eslint src --max-warnings=0`
+   must both pass. Typed routes regenerate when Metro runs (`npx expo start`).
+
+## Mocked / deferred (wire later, structure already supports it)
+
+- **Inputs are visual.** `Field` renders a label + value/placeholder, not a
+  real `<TextInput>`. The signup store is seeded with the design's sample
+  values so screens match the mock. To make editable: swap the value `<Text>`
+  in `components/ui/field.tsx` for a `TextInput` and bind to the store — no
+  screen changes needed.
+- **No home screen yet.** The "done" screen CTA resets and loops to splash;
+  point it at the real home route once that exists.
+- Social / forgot-password / OTP buttons are inert by design.
+
+## Adding a new screen (recipe)
+
+1. Build it in `src/features/<domain>/screens/<name>-screen.tsx` using
+   `@/components/ui` primitives + `@/theme`. No raw colors/sizes.
+2. Add a one-line route file under `src/app/...` re-exporting it.
+3. Register it in the relevant `_layout.tsx` `<Stack>` if it needs specific
+   options (background, gestures).
+4. `tsc` + `eslint`, then `npx expo start` to smoke-test in Expo Go.
