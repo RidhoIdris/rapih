@@ -24,6 +24,7 @@ const ROUTES: Partial<Record<TabId, Href>> = {
   beranda: '/(app)/beranda' as Href,
   transaksi: '/(app)/transaksi' as Href,
   tanya: '/(app)/tanya' as Href,
+  saya: '/(app)/saya' as Href,
 };
 
 function TabGlyph({ d, active }: { d: string; active: boolean }) {
