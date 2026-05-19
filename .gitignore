@@ -1,0 +1,25 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+
+node_modules/
+.turbo/
+
+# Expo / React Native
+.expo/
+dist/
+web-build/
+android/
+ios/
+
+# Next.js
+.next/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*

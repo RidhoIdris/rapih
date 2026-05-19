@@ -1,0 +1,11 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+allowBuilds:
+  dtrace-provider: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@expo/eas-build-job@18.13.1'
+  - '@expo/eas-json@18.13.1'
+  - '@expo/steps@18.13.1'
+  - eas-cli@18.13.1
