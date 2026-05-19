@@ -65,6 +65,31 @@ export const textVariants = {
     fontSize: 32,
     letterSpacing: -1.2,
   },
+  /** Serif money/stat figures — reused across all finance screens. */
+  figureXL: {
+    fontFamily: fontFamily.display500,
+    fontSize: 56,
+    letterSpacing: -2,
+    lineHeight: 56,
+  },
+  figureL: {
+    fontFamily: fontFamily.display500,
+    fontSize: 30,
+    letterSpacing: -1,
+    lineHeight: 31,
+  },
+  figureM: {
+    fontFamily: fontFamily.display500,
+    fontSize: 24,
+    letterSpacing: -0.6,
+    lineHeight: 25,
+  },
+  figureS: {
+    fontFamily: fontFamily.display500,
+    fontSize: 22,
+    letterSpacing: -0.5,
+    lineHeight: 24,
+  },
   /** Small uppercase colored label above a heading */
   eyebrow: {
     fontFamily: fontFamily.sans700,

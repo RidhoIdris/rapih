@@ -64,6 +64,22 @@ export const radius = {
 } as const;
 
 /**
+ * Category / accent tints — soft pastel tile backgrounds with a matching
+ * readable ink. Used for quick-access tiles, category bars, info cards.
+ * These are CONTENT accents, distinct from the core brand palette.
+ */
+export const tint = {
+  amber: '#fef0bb',
+  amberInk: '#5a4a20',
+  mint: '#dff2e3',
+  mintInk: '#2d4733',
+  iris: '#e7e6f6',
+  irisInk: '#4a3d8e',
+  peach: '#fde0d4',
+  peachInk: '#8a4438',
+} as const;
+
+/**
  * Elevation as CSS `boxShadow` strings (required by the Expo styling rules —
  * never use legacy RN shadow/elevation props).
  */

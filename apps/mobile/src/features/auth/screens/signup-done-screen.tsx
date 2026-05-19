@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 
 import { palette, radius, space } from '@/theme';
 import { RapihWordmark } from '@/components/brand';
@@ -19,11 +19,10 @@ export function SignupDoneScreen() {
   const nickname = useSignupStore((s) => s.nickname);
   const reset = useSignupStore((s) => s.reset);
 
-  // Home is out of scope for this UI build — restart the flow as a stand-in.
-  // Wire this to the app's home route once it exists.
   const enterApp = () => {
     reset();
-    router.replace('/(auth)/splash');
+    // Cast until Metro regenerates typed routes on first `expo start`.
+    router.replace('/(app)/beranda' as Href);
   };
 
   return (

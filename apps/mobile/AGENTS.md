@@ -14,9 +14,10 @@ auth. Screens are pixel-faithful recreations of an approved HTML/CSS design
 (white base + pastel mint). The source design lives in the Claude Design
 handoff; the visual system is fully captured in `src/theme`.
 
-Currently implemented: the **auth flow** only — splash, login, 3-step register,
-done. Everything else (home, dompet, transaksi, goal, asset, profile, etc.) is
-yet to be built on this foundation.
+Currently implemented: the **auth flow** (splash, login, 3-step register,
+done) and the **Beranda** (home dashboard) screen. Everything else (dompet,
+transaksi, budget, goal, asset, profile, etc.) is yet to be built on this
+foundation. Source designs live in the handoff `screens/*.jsx` files.
 
 ## Stack (decided — do not swap without reason)
 
@@ -38,20 +39,36 @@ src/
   lib/          fonts.ts · money.ts (rupiah) · haptics.ts
   components/
     ui/         Text Button Card Screen Field Chip Caret Glow ProgressDots
-                BackButton LabeledDivider  ← generic primitives, import via @/components/ui
+                BackButton LabeledDivider TabBar  ← primitives, import via @/components/ui
     brand/      RapihMark RapihWordmark Monogram
     icons/      icon.tsx  ← <Icon name=... />, the only place raw <Svg> lives
+                (exception: TabBar owns its own nav glyphs — stateful fill/stroke)
   features/
     auth/
       signup-store.ts          zustand wizard state (seeded w/ design sample data)
       components/step-header.tsx  feature-local shared piece
       screens/*.tsx            screen compositions (NOT routes)
+    home/
+      screens/beranda-screen.tsx  home dashboard (PulseRing helper is local)
   app/          ROUTES ONLY — thin files that re-export a feature screen
     _layout.tsx          fonts + splash gate + providers
     index.tsx            redirect → /(auth)/splash
     (auth)/_layout.tsx   auth Stack
     (auth)/...            splash login register/email register/name register/income done
+    (app)/_layout.tsx    main-app Stack (post-auth)
+    (app)/beranda.tsx    → Beranda; done screen routes here
 ```
+
+**Design figures & accents** (added for Beranda, reuse everywhere):
+- `textVariants.figureXL/figureL/figureM/figureS` — serif (Bricolage) money &
+  stat numbers. Use these for any large figure; override `fontSize` in `style`
+  only for one-off sizes (matches the auth-screen pattern).
+- `tint` from `@/theme` — pastel category tile colors (`amber/mint/iris/peach`
+  + matching `*Ink`). For quick-access tiles, category bars, info cards. These
+  are CONTENT accents, separate from the core brand `palette`.
+- `<TabBar active="beranda" />` — floating bottom nav, 4 tabs + raised center
+  Tanya button. Render it as a sibling AFTER `<Screen>` (it's absolutely
+  positioned); give the Screen `bottomInset≈96` so content clears it.
 
 ## Conventions (follow these to stay consistent)
 
@@ -81,8 +98,12 @@ src/
   values so screens match the mock. To make editable: swap the value `<Text>`
   in `components/ui/field.tsx` for a `TextInput` and bind to the store — no
   screen changes needed.
-- **No home screen yet.** The "done" screen CTA resets and loops to splash;
-  point it at the real home route once that exists.
+- **Beranda is static.** All numbers/transactions are hardcoded inline in
+  `beranda-screen.tsx` (mirrors the design mock). No store yet — add a
+  `home-store.ts` (zustand) and lift the consts into it when wiring data.
+- **TabBar is presentational.** Taps fire haptics + an optional `onTab`
+  callback; tab→route navigation isn't wired (only Beranda exists). The
+  `(app)` group is where post-auth tab screens go.
 - Social / forgot-password / OTP buttons are inert by design.
 
 ## Adding a new screen (recipe)
