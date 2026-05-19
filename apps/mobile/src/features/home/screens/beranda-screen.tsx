@@ -141,11 +141,11 @@ type QuickItem = {
 };
 
 const QUICK: QuickItem[] = [
-  { l: 'Scan struk', e: '📸', c: tint.amber, tc: tint.amberInk },
+  { l: 'Scan struk', e: '📸', c: tint.amber, tc: tint.amberInk, to: '/(app)/scan-struk' },
   { l: 'Dompet', e: '👛', c: tint.mint, tc: tint.mintInk, to: '/(app)/dompet' },
-  { l: 'Aktivitas', e: '↗', c: palette.limeSoft, tc: palette.moss },
+  { l: 'Transaksi', e: '↗', c: palette.limeSoft, tc: palette.moss, to: '/(app)/transaksi' },
   { l: 'Aset', e: '📈', c: tint.iris, tc: tint.irisInk },
-  { l: 'Tagihan', e: '📅', c: tint.peach, tc: tint.peachInk },
+  { l: 'Tagihan', e: '📅', c: tint.peach, tc: tint.peachInk, to: '/(app)/transaksi?mode=rutin' },
   { l: 'Goal', e: '◇', c: palette.card, tc: palette.ink, border: true },
 ];
 
@@ -950,12 +950,7 @@ export function BerandaScreen() {
         </View>
       </Screen>
 
-      <TabBar
-        active="beranda"
-        onTab={(id) => {
-          if (id === 'tanya') router.push('/(app)/tanya' as Href);
-        }}
-      />
+      <TabBar active="beranda" />
     </View>
   );
 }

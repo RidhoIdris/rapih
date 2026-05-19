@@ -77,8 +77,12 @@ export const tint = {
   irisInk: '#4a3d8e',
   peach: '#fde0d4',
   peachInk: '#8a4438',
+  rose: '#f5dee5',
+  roseInk: '#7a3850',
   /** mid-saturation gold — chart/breakdown bars (not a fill tile) */
   gold: '#e0a83e',
+  /** deeper gold — "upcoming" status text & warning icon chips */
+  goldInk: '#c89a3a',
 } as const;
 
 /**

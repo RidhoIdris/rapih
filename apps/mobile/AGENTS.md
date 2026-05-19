@@ -15,10 +15,11 @@ auth. Screens are pixel-faithful recreations of an approved HTML/CSS design
 handoff; the visual system is fully captured in `src/theme`.
 
 Currently implemented: the **auth flow** (splash, login, 3-step register,
-done), **Beranda** (home dashboard), **Tanya** (AI co-pilot chat), and
-**Dompet** (wallet list + BCA detail + add-wallet). Everything else
-(transaksi, budget, goal, asset, profile, etc.) is yet to be built on this
-foundation. Source designs live in the handoff `screens/*.jsx` files
+done), **Beranda**, **Tanya** (AI chat), **Dompet** (list/detail/add), and
+the **Aktivitas / Scan Struk / Rutin** section (transaksi list/detail/add,
+scan-struk camera + review, recurring list/detail + tandai-bayar sheet).
+Everything else (budget, goal, asset, profile, weekly-review) is yet to be
+built on this foundation. Source designs live in the handoff `screens/*.jsx`
 (Tanya = `copilot.jsx`, Dompet = `wallet.jsx` + `addDompet.jsx`).
 Bank/e-wallet **brand colors are data** (kept in screen-local arrays), not
 `@/theme` tokens — they're external brand identity, not the design system.
@@ -63,18 +64,46 @@ src/
       screens/dompet-detail-screen.tsx  BCA detail (inline SVG LinearGradient
                                         card bg + sparkline; back via router)
       screens/tambah-dompet-screen.tsx  add wallet (x closes via router.back)
+    activity/
+      screens/transaksi-screen.tsx        TRANSAKSI HUB — a TabBar tab.
+                                          Segmented "Aktivitas | Rutin"
+                                          (mode from `?mode=rutin` param);
+                                          Rutin mode renders <RutinPanel/>.
+                                          FAB → inline chooser (Tulis manual
+                                          / Scan struk). Has TabBar.
+      screens/transaksi-detail-screen.tsx tx detail
+      screens/tambah-transaksi-screen.tsx add tx (faux amount + caret)
+    scan/
+      screens/scan-struk-screen.tsx        dark camera (NO Screen; own
+                                           StatusBar light; shutter→review)
+      screens/scan-struk-review-screen.tsx OCR review (Screen)
+    recurring/
+      components/rutin-panel.tsx           recurring-bills content (no Screen/
+                                           header) — Rutin mode of the hub
+      screens/recurring-detail-screen.tsx  KPR detail (solid #0060af + Glow)
+      screens/tandai-bayar-screen.tsx      bottom-sheet (transparentModal;
+                                           NO Screen; own StatusBar light)
   app/          ROUTES ONLY — thin files that re-export a feature screen
     _layout.tsx          fonts + splash gate + providers
     index.tsx            redirect → /(auth)/splash
     (auth)/_layout.tsx   auth Stack
     (auth)/...            splash login register/email register/name register/income done
     (app)/_layout.tsx    main-app Stack (post-auth)
-    (app)/beranda.tsx    → Beranda; done screen routes here
-    (app)/tanya.tsx      → Tanya; reached via TabBar center button (onTab)
-    (app)/dompet.tsx     → Dompet list; reached from Beranda quick-access tile
-    (app)/dompet-detail.tsx  → BCA detail; from a Dompet row
-    (app)/tambah-dompet.tsx  → Add wallet; from Dompet + / dashed button
+    (app)/beranda.tsx    → Beranda
+    (app)/tanya.tsx      → Tanya (TabBar center button)
+    (app)/transaksi.tsx  → Transaksi hub (TabBar tab; `?mode=rutin` for
+                           Rutin mode — Beranda "Tagihan" tile uses this)
+    (app)/dompet.tsx · dompet-detail.tsx · tambah-dompet.tsx
+    (app)/transaksi-detail.tsx · tambah-transaksi.tsx (from hub FAB)
+    (app)/scan-struk.tsx · scan-struk-review.tsx (from hub FAB / Beranda tile)
+    (app)/rutin-detail.tsx · tandai-bayar.tsx (transparentModal in _layout)
 ```
+
+**Navigation**: `<TabBar>` self-routes via its internal `ROUTES` map
+(`beranda`/`transaksi`/`tanya` built; `budget`/`saya` buzz-only until built).
+Callers just render `<TabBar active="..." />` — do NOT pass `onTab` unless
+overriding. Tabs: Beranda · Budget · ⟨Tanya⟩ · Transaksi · Saya (the old
+`kebiasaan` tab was replaced by `transaksi`).
 
 **Design figures & accents** (added for Beranda, reuse everywhere):
 - `textVariants.figureXL/figureL/figureM/figureS` — serif (Bricolage) money &

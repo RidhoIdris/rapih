@@ -25,7 +25,10 @@ export type IconName =
   | 'check'
   | 'x'
   | 'swap'
-  | 'send';
+  | 'send'
+  | 'filter'
+  | 'doc'
+  | 'image';
 
 type Props = {
   name: IconName;
@@ -52,6 +55,9 @@ const META: Record<IconName, { vb: string; size: number }> = {
   x: { vb: '0 0 12 12', size: 12 },
   swap: { vb: '0 0 14 14', size: 14 },
   send: { vb: '0 0 16 16', size: 16 },
+  filter: { vb: '0 0 14 14', size: 14 },
+  doc: { vb: '0 0 14 14', size: 14 },
+  image: { vb: '0 0 14 14', size: 14 },
 };
 
 export function Icon({ name, size, color = palette.ink }: Props) {
@@ -202,6 +208,35 @@ export function Icon({ name, size, color = palette.ink }: Props) {
       return (
         <Svg {...common} fill="none">
           <Path d="M2 8l12-6-3 14-3-6L2 8z" fill={color} />
+        </Svg>
+      );
+    case 'filter':
+      return (
+        <Svg {...common} fill="none">
+          <Path
+            d="M1 3h12M3 7h8M5 11h4"
+            stroke={color}
+            strokeWidth={1.6}
+            strokeLinecap="round"
+          />
+        </Svg>
+      );
+    case 'doc':
+      return (
+        <Svg {...common} fill="none">
+          <Path
+            d="M2 2h7l3 3v7H2V2zM9 2v3h3"
+            stroke={color}
+            strokeWidth={1.4}
+            strokeLinejoin="round"
+          />
+        </Svg>
+      );
+    case 'image':
+      return (
+        <Svg {...common} fill="none">
+          <Rect x={2} y={2} width={10} height={10} rx={1} stroke={color} strokeWidth={1.4} />
+          <Path d="M2 9l3-3 3 3 4-4" stroke={color} strokeWidth={1.4} strokeLinejoin="round" />
         </Svg>
       );
   }

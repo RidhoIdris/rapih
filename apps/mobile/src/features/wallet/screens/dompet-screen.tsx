@@ -225,13 +225,7 @@ export function DompetScreen() {
         </Pressable>
       </Screen>
 
-      <TabBar
-        active="beranda"
-        onTab={(id) => {
-          if (id === 'tanya') router.push('/(app)/tanya' as Href);
-          if (id === 'beranda') router.push('/(app)/beranda' as Href);
-        }}
-      />
+      <TabBar active="beranda" />
     </View>
   );
 }

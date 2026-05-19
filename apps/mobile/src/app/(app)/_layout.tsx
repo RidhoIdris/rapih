@@ -8,7 +8,11 @@ export default function AppLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: palette.bg },
-      }}
-    />
+      }}>
+      <Stack.Screen
+        name="tandai-bayar"
+        options={{ presentation: 'transparentModal', animation: 'fade' }}
+      />
+    </Stack>
   );
 }
