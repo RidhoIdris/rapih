@@ -14,7 +14,7 @@ export function SignupNameScreen() {
   const set = useSignupStore((s) => s.set);
 
   return (
-    <Screen background={palette.bg} topInset={16} bottomInset={8}>
+    <Screen background={palette.bg} bottomInset={8}>
       <StepHeader step={2} onSkip={() => router.push('/(auth)/register/income')} />
 
       <View style={{ paddingTop: space.xl, paddingHorizontal: space.xxl }}>

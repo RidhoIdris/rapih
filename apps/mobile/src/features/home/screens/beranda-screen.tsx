@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 
 import { palette, tint } from '@/theme';
@@ -130,9 +131,18 @@ function Pill({
   );
 }
 
-const QUICK = [
+type QuickItem = {
+  l: string;
+  e: string;
+  c: string;
+  tc: string;
+  border?: boolean;
+  to?: string;
+};
+
+const QUICK: QuickItem[] = [
   { l: 'Scan struk', e: '📸', c: tint.amber, tc: tint.amberInk },
-  { l: 'Dompet', e: '👛', c: tint.mint, tc: tint.mintInk },
+  { l: 'Dompet', e: '👛', c: tint.mint, tc: tint.mintInk, to: '/(app)/dompet' },
   { l: 'Aktivitas', e: '↗', c: palette.limeSoft, tc: palette.moss },
   { l: 'Aset', e: '📈', c: tint.iris, tc: tint.irisInk },
   { l: 'Tagihan', e: '📅', c: tint.peach, tc: tint.peachInk },
@@ -159,13 +169,14 @@ const TX = [
 ];
 
 export function BerandaScreen() {
+  const router = useRouter();
   const dailyAvg =
     DAILY.slice(0, 17).reduce((s, x) => s + x, 0) / 17;
   const maxBar = 220;
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.bg }}>
-      <Screen background={palette.bg} topInset={10} bottomInset={96}>
+      <Screen background={palette.bg} bottomInset={96}>
         {/* ── top bar ── */}
         <View
           style={{
@@ -173,7 +184,6 @@ export function BerandaScreen() {
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: 22,
-            paddingTop: 14,
           }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <Monogram initials="AD" bg={palette.moss} fg={palette.lime} size={38} />
@@ -387,7 +397,10 @@ export function BerandaScreen() {
           {QUICK.map((s) => (
             <Pressable
               key={s.l}
-              onPress={() => haptics.tap()}
+              onPress={() => {
+                haptics.tap();
+                if (s.to) router.push(s.to as Href);
+              }}
               style={{ minWidth: 68, alignItems: 'center', gap: 6 }}>
               <View
                 style={{
@@ -937,7 +950,12 @@ export function BerandaScreen() {
         </View>
       </Screen>
 
-      <TabBar active="beranda" />
+      <TabBar
+        active="beranda"
+        onTab={(id) => {
+          if (id === 'tanya') router.push('/(app)/tanya' as Href);
+        }}
+      />
     </View>
   );
 }

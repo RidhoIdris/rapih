@@ -15,9 +15,13 @@ auth. Screens are pixel-faithful recreations of an approved HTML/CSS design
 handoff; the visual system is fully captured in `src/theme`.
 
 Currently implemented: the **auth flow** (splash, login, 3-step register,
-done) and the **Beranda** (home dashboard) screen. Everything else (dompet,
-transaksi, budget, goal, asset, profile, etc.) is yet to be built on this
-foundation. Source designs live in the handoff `screens/*.jsx` files.
+done), **Beranda** (home dashboard), **Tanya** (AI co-pilot chat), and
+**Dompet** (wallet list + BCA detail + add-wallet). Everything else
+(transaksi, budget, goal, asset, profile, etc.) is yet to be built on this
+foundation. Source designs live in the handoff `screens/*.jsx` files
+(Tanya = `copilot.jsx`, Dompet = `wallet.jsx` + `addDompet.jsx`).
+Bank/e-wallet **brand colors are data** (kept in screen-local arrays), not
+`@/theme` tokens — they're external brand identity, not the design system.
 
 ## Stack (decided — do not swap without reason)
 
@@ -50,6 +54,15 @@ src/
       screens/*.tsx            screen compositions (NOT routes)
     home/
       screens/beranda-screen.tsx  home dashboard (PulseRing helper is local)
+    tanya/
+      screens/tanya-screen.tsx    AI co-pilot chat (NO TabBar — has composer;
+                                  custom header+scroll+absolute composer layout,
+                                  not <Screen>; SVG fade behind composer)
+    wallet/
+      screens/dompet-screen.tsx         wallet list (has TabBar)
+      screens/dompet-detail-screen.tsx  BCA detail (inline SVG LinearGradient
+                                        card bg + sparkline; back via router)
+      screens/tambah-dompet-screen.tsx  add wallet (x closes via router.back)
   app/          ROUTES ONLY — thin files that re-export a feature screen
     _layout.tsx          fonts + splash gate + providers
     index.tsx            redirect → /(auth)/splash
@@ -57,6 +70,10 @@ src/
     (auth)/...            splash login register/email register/name register/income done
     (app)/_layout.tsx    main-app Stack (post-auth)
     (app)/beranda.tsx    → Beranda; done screen routes here
+    (app)/tanya.tsx      → Tanya; reached via TabBar center button (onTab)
+    (app)/dompet.tsx     → Dompet list; reached from Beranda quick-access tile
+    (app)/dompet-detail.tsx  → BCA detail; from a Dompet row
+    (app)/tambah-dompet.tsx  → Add wallet; from Dompet + / dashed button
 ```
 
 **Design figures & accents** (added for Beranda, reuse everywhere):
@@ -68,7 +85,11 @@ src/
   are CONTENT accents, separate from the core brand `palette`.
 - `<TabBar active="beranda" />` — floating bottom nav, 4 tabs + raised center
   Tanya button. Render it as a sibling AFTER `<Screen>` (it's absolutely
-  positioned); give the Screen `bottomInset≈96` so content clears it.
+  positioned); give the Screen `bottomInset≈96` so content clears it. Pass
+  `onTab={(id) => …}` to wire navigation (Beranda routes `tanya` → `/(app)/tanya`).
+- `tint.gold` (#e0a83e) — mid-saturation gold for chart/breakdown bars
+  (distinct from the pale `tint.amber` fill tile). `Icon name="send"` =
+  paper-plane glyph (chat composer send button).
 
 ## Conventions (follow these to stay consistent)
 
@@ -85,7 +106,15 @@ src/
    `shadow*`/`elevation`).
 5. **New fonts/weights**: add to BOTH `theme/typography.ts` (`fontFamily`) and
    `lib/fonts.ts` (`FONT_MAP`) — keys must match.
-6. **Screens** are wrapped in `<Screen>` which handles safe-area + scroll.
+6. **Screens** are wrapped in `<Screen>` which handles safe-area + scroll
+   **+ the status-bar style** (auto: light content on `moss` bg, dark
+   otherwise — so clock/battery/wifi stay visible). Top spacing is the
+   **bare safe-area inset** — there is NO `topInset`; never re-add a manual
+   `paddingTop` in a header (the inset already clears the status bar). Only
+   `bottomInset` exists, and only to clear the floating TabBar (≈96). A
+   screen that does NOT use `<Screen>` (e.g. Tanya's custom chat layout)
+   must use `useSafeAreaInsets()` (`insets.top`, no extra gap) and render
+   its own `<StatusBar style="dark|light" />` from `expo-status-bar`.
    Use the `flex:1` spacer pattern to pin a CTA to the bottom (see any
    auth screen).
 7. After changes: `npx tsc --noEmit` and `npx eslint src --max-warnings=0`

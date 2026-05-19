@@ -23,8 +23,8 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        {/* Auth flow starts on a dark hero, so light status-bar content. */}
-        <StatusBar style="light" />
+        {/* Default fallback; each <Screen> overrides to match its bg. */}
+        <StatusBar style="dark" />
         <Stack
           screenOptions={{
             headerShown: false,

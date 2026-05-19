@@ -9,7 +9,7 @@ export function SplashScreen() {
   const router = useRouter();
 
   return (
-    <Screen background={palette.moss} topInset={24} bottomInset={8}>
+    <Screen background={palette.moss} bottomInset={8}>
       <Glow size={360} opacity={0.45} fadeAt={0.65} position={{ top: -80, right: -100 }} />
       <Glow size={380} opacity={0.18} fadeAt={0.7} position={{ bottom: -120, left: -120 }} />
 

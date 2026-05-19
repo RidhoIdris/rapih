@@ -77,6 +77,8 @@ export const tint = {
   irisInk: '#4a3d8e',
   peach: '#fde0d4',
   peachInk: '#8a4438',
+  /** mid-saturation gold — chart/breakdown bars (not a fill tile) */
+  gold: '#e0a83e',
 } as const;
 
 /**

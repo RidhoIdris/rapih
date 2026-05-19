@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
-import { Pressable, View, type TextStyle } from 'react-native';
+import { Pressable, TextInput, View, type TextStyle } from 'react-native';
 
-import { palette, radius as radii, space, type TextVariant } from '@/theme';
+import { palette, radius as radii, space, textVariants, type TextVariant } from '@/theme';
 
-import { Caret } from './caret';
 import { Card } from './card';
 import { Text } from './text';
 
@@ -40,7 +39,6 @@ export function Field({
   value,
   placeholder,
   focused = false,
-  caret = false,
   trailing,
   valueVariant = 'value',
   valueLetterSpacing,
@@ -48,11 +46,8 @@ export function Field({
   radius = radii.lg,
   onPress,
 }: Props) {
-  const hasValue = value != null && value.length > 0;
-  const caretHeight = valueVariant === 'displayInput' ? 30 : 16;
-
   return (
-    <Pressable onPress={onPress} disabled={!onPress}>
+    <Pressable onPress={onPress}>
       <Card
         focused={focused}
         radius={radius}
@@ -67,19 +62,17 @@ export function Field({
           <Text variant="label" color={palette.inkMute}>
             {label}
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: space.xs }}>
-            <Text
-              variant={valueVariant}
-              color={hasValue ? palette.ink : palette.inkMute}
-              style={[
-                valueLetterSpacing != null && { letterSpacing: valueLetterSpacing },
-                !hasValue && { fontStyle: 'italic' },
-                valueStyle,
-              ]}>
-              {hasValue ? value : placeholder}
-            </Text>
-            {caret ? <Caret height={caretHeight} /> : null}
-          </View>
+          <TextInput
+            defaultValue={value}
+            placeholder={placeholder}
+            placeholderTextColor={palette.inkMute}
+            style={[
+              textVariants[valueVariant],
+              { color: palette.ink, marginTop: space.xs, padding: 0 },
+              valueLetterSpacing != null && { letterSpacing: valueLetterSpacing },
+              valueStyle,
+            ]}
+          />
         </View>
         {trailing ? <View style={{ marginLeft: space.md }}>{trailing}</View> : null}
       </Card>

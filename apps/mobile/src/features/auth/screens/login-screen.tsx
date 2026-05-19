@@ -20,7 +20,7 @@ export function LoginScreen() {
   const email = useSignupStore((s) => s.email);
 
   return (
-    <Screen background={palette.bg} topInset={16} bottomInset={8}>
+    <Screen background={palette.bg} bottomInset={8}>
       {/* nav */}
       <View
         style={{

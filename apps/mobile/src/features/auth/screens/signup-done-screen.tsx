@@ -26,7 +26,7 @@ export function SignupDoneScreen() {
   };
 
   return (
-    <Screen background={palette.moss} topInset={24} bottomInset={8}>
+    <Screen background={palette.moss} bottomInset={8}>
       <Glow size={480} opacity={0.32} fadeAt={0.65} position={{ top: -120, alignSelf: 'center' }} />
 
       <View

@@ -24,7 +24,8 @@ export type IconName =
   | 'more'
   | 'check'
   | 'x'
-  | 'swap';
+  | 'swap'
+  | 'send';
 
 type Props = {
   name: IconName;
@@ -50,6 +51,7 @@ const META: Record<IconName, { vb: string; size: number }> = {
   check: { vb: '0 0 14 14', size: 14 },
   x: { vb: '0 0 12 12', size: 12 },
   swap: { vb: '0 0 14 14', size: 14 },
+  send: { vb: '0 0 16 16', size: 16 },
 };
 
 export function Icon({ name, size, color = palette.ink }: Props) {
@@ -194,6 +196,12 @@ export function Icon({ name, size, color = palette.ink }: Props) {
             strokeLinejoin="round"
             fill="none"
           />
+        </Svg>
+      );
+    case 'send':
+      return (
+        <Svg {...common} fill="none">
+          <Path d="M2 8l12-6-3 14-3-6L2 8z" fill={color} />
         </Svg>
       );
   }

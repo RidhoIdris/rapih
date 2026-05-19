@@ -42,7 +42,7 @@ export function SignupIncomeScreen() {
   const { income, goal, set } = useSignupStore();
 
   return (
-    <Screen background={palette.bg} topInset={16} bottomInset={4}>
+    <Screen background={palette.bg} bottomInset={4}>
       <StepHeader step={3} onSkip={() => router.replace('/(auth)/done')} />
 
       <View style={{ paddingTop: space.xl, paddingHorizontal: space.xxl }}>

@@ -20,7 +20,7 @@ export function SignupEmailScreen() {
   const email = useSignupStore((s) => s.email);
 
   return (
-    <Screen background={palette.bg} topInset={16} bottomInset={8}>
+    <Screen background={palette.bg} bottomInset={8}>
       <StepHeader step={1} />
 
       <View style={{ paddingTop: space.xxl, paddingHorizontal: space.xxl }}>
