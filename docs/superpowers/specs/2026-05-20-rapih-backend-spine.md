@@ -146,8 +146,9 @@ All API responses:
 ## 8. Validation
 
 - **Zod** schemas in `packages/shared/schemas/*`. Each route imports its schema.
-- Fastify plugin `withSchema(schema)` validates body/query/params; rejects with `validation.failed` envelope.
-- The same zod schema is exported to mobile/web for client-side validation (single source of truth).
+- Fastify uses `fastify-type-provider-zod` so route `schema: { body, query, params, response }` accepts raw zod schemas directly; validation errors auto-shape into the `validation.failed` envelope via the error handler in `apps/api/src/lib/errors.ts`.
+- Every route MUST declare its zod schemas — otherwise it won't appear in `/docs/json` (OpenAPI) and `/docs` (Swagger UI).
+- The same zod schema is exported to mobile/web via `packages/shared` for client-side validation and type inference (`z.infer<typeof schema>`) — single source of truth.
 
 ## 9. Env & Secrets
 

@@ -19,9 +19,13 @@ None. No Prisma yet.
 
 | Method | Path | Body | Response | Notes |
 |---|---|---|---|---|
-| GET | `/health` | — | `{ ok: true, data: { service: 'api', version: <pkg.version> } }` | Used by Dokploy health checks and load balancers. No auth. |
+| GET | `/health` | — | `{ ok: true, data: { service: 'api', version: <pkg.version> } }` | Used by Dokploy health checks and load balancers. No auth. Tagged `meta` in OpenAPI. |
+| GET | `/docs` | — | HTML Swagger UI | **Dev only** (`NODE_ENV !== 'production'`). In production returns 404. |
+| GET | `/docs/json` | — | OpenAPI 3.0 JSON spec | Always available (used for client codegen later). |
 
-Response shape MUST follow Spine § 7 envelope.
+Response shape for non-doc endpoints MUST follow Spine § 7 envelope.
+
+All routes MUST define their zod schemas (body / query / params / response). Schemas plug into both Fastify validation and OpenAPI generation via `fastify-type-provider-zod`. A route without schemas will not appear in `/docs/json`.
 
 ## 4. Worker jobs
 
@@ -41,8 +45,8 @@ None. Mobile / admin don't call this yet.
   - `start`: `node dist/server.js`
   - `lint`: `biome check src`
   - `check`: `tsc --noEmit && biome check src`
-  - Runtime deps: `fastify@^5`, `@fastify/cors@^10`, `@fastify/sensible@^6`, `zod@^3`, `dotenv@^16`, `pino-pretty@^11` (dev only).
-  - Dev deps: `typescript@^5.7`, `tsx@^4`, `@biomejs/biome@^2`, `@types/node@^22`, `vitest@^2`.
+  - Runtime deps: `fastify@^5`, `@fastify/cors@^10`, `@fastify/sensible@^6`, `@fastify/swagger@^9`, `@fastify/swagger-ui@^5`, `fastify-type-provider-zod@^4`, `zod@^3`, `dotenv@^16`.
+  - Dev deps: `typescript@^5.7`, `tsx@^4`, `@biomejs/biome@^2`, `@types/node@^22`, `vitest@^2`, `pino-pretty@^11`.
 
 - `apps/api/tsconfig.json` — strict, ESNext target, ESNext module, NodeNext moduleResolution, `outDir: dist`, `rootDir: src`, `skipLibCheck: true`. Standalone (does not extend anything yet — `packages/config` introduced in a later chunk when 2+ apps share config).
 
@@ -64,7 +68,7 @@ None. Mobile / admin don't call this yet.
   - **Stage 2 (installer)**: `node:22-alpine`, copy pruned `pnpm-lock.yaml` + `json` artifacts, `pnpm install --frozen-lockfile`, copy pruned `full/` source, run `pnpm --filter @rapih/api build`.
   - **Stage 3 (runner)**: `node:22-alpine`, copy from installer stage only `apps/api/dist`, `apps/api/package.json`, and pruned `node_modules`. Create non-root user, `USER node`, `EXPOSE 3001`, `CMD ["node", "apps/api/dist/server.js"]`. Healthcheck instruction calling `/health`.
 
-- `apps/api/src/server.ts` — entry. Creates Fastify instance with pino logger (pretty in dev), registers `@fastify/sensible` + `@fastify/cors`, registers routes via `routes/index.ts`, calls `listen({ host: '0.0.0.0', port: env.PORT })`. Exports app for testing. Handles graceful shutdown on SIGINT/SIGTERM.
+- `apps/api/src/server.ts` — entry. Creates Fastify instance with pino logger (pretty in dev), sets the zod type provider via `setValidatorCompiler(validatorCompiler)` + `setSerializerCompiler(serializerCompiler)` from `fastify-type-provider-zod`, registers `@fastify/sensible` + `@fastify/cors`, registers `plugins/swagger.ts`, registers routes via `routes/index.ts`, registers the error handler from `lib/errors.ts`, calls `listen({ host: '0.0.0.0', port: env.PORT })`. Exports app for testing. Handles graceful shutdown on SIGINT/SIGTERM.
 
 - `apps/api/src/config/env.ts` — zod schema:
   ```
@@ -85,16 +89,18 @@ None. Mobile / admin don't call this yet.
   - If `error.validation` (Fastify schema validation): reply 400 with `err('validation.failed', 'Validation gagal.', { fields: ... })`.
   - Else: log and reply 500 with `err('internal.unknown', 'Terjadi kesalahan pada server.')`. NEVER leak error.message to client in production.
 
+- `apps/api/src/plugins/swagger.ts` — Fastify plugin that registers `@fastify/swagger` (OpenAPI 3.0 generation, with `transform` from `fastify-type-provider-zod` so zod schemas convert to JSON Schema) and `@fastify/swagger-ui`. UI mounted at `/docs` only when `env.NODE_ENV !== 'production'`. JSON spec served at `/docs/json` always. OpenAPI info: title `Rapih API`, version from `package.json`, description short, tags pre-declared: `meta`, `auth` (placeholder for next chunk), `me`. Servers entry uses `env.API_PUBLIC_URL`.
+
 - `apps/api/src/routes/index.ts` — exports `registerRoutes(app)` that registers all route plugins. For this chunk, only health.
 
-- `apps/api/src/routes/health.ts` — Fastify plugin. `GET /health` returns `ok({ service: 'api', version: pkg.version })` where version is read from package.json at module load (typed import via `import pkg from '../../package.json' with { type: 'json' }`).
+- `apps/api/src/routes/health.ts` — Fastify plugin using the zod type provider. Defines a response schema `z.object({ ok: z.literal(true), data: z.object({ service: z.literal('api'), version: z.string() }) })`, declares the route with `schema: { tags: ['meta'], response: { 200: ... } }`. Handler returns `ok({ service: 'api', version: pkg.version })` where version is read from package.json at module load (typed import via `import pkg from '../../package.json' with { type: 'json' }`).
 
 - `apps/api/AGENTS.md` — agent guide for this app. Sections (mirror `apps/mobile/AGENTS.md` style):
   - **What this app is** (one paragraph).
   - **Stack (locked)** — table referencing Spine § 2 for source of truth.
   - **Directory map** — annotated tree of `src/`.
-  - **How to add a route** — step-by-step recipe (create file in `src/routes/<name>.ts`, define zod schemas, register in `routes/index.ts`, use `ok()`/`AppError`, write integration test).
-  - **Conventions** — env loaded via `config/env.ts`, all responses via envelope helper, errors via `AppError`, no `console.log` (use `app.log`).
+  - **How to add a route** — step-by-step recipe (create file in `src/routes/<name>.ts`, define zod schemas for body/query/params/response, declare `schema: { tags: [...], body, response }` so it appears in OpenAPI, register in `routes/index.ts`, use `ok()`/`AppError`, write integration test).
+  - **Conventions** — env loaded via `config/env.ts`, all responses via envelope helper, errors via `AppError`, no `console.log` (use `app.log`), **all routes MUST declare zod schemas** (otherwise they won't appear in Swagger UI).
   - **Pointer to Spine** — "anything cross-cutting, read `docs/superpowers/specs/2026-05-20-rapih-backend-spine.md`".
 
 - `apps/api/tests/health.test.ts` — vitest test: import app, call `app.inject({ method: 'GET', url: '/health' })`, assert 200 + envelope shape.
@@ -128,10 +134,13 @@ Every box must check before declaring done.
   ```json
   { "ok": true, "data": { "service": "api", "version": "0.1.0" } }
   ```
+- [ ] In dev: `http://localhost:3001/docs` renders Swagger UI showing the `/health` route under tag `meta`.
+- [ ] `curl -s http://localhost:3001/docs/json` returns valid OpenAPI 3.0 JSON (has `openapi`, `info`, `paths` keys; `paths./health` present).
+- [ ] In production (NODE_ENV=production): `GET /docs` returns 404. `GET /docs/json` still returns the spec.
 - [ ] `pnpm --filter @rapih/api check` passes (tsc + biome).
 - [ ] `pnpm --filter @rapih/api build` produces `apps/api/dist/server.js`.
 - [ ] `node apps/api/dist/server.js` boots from the built output.
-- [ ] `pnpm --filter @rapih/api test` passes (the health vitest case).
+- [ ] `pnpm --filter @rapih/api test` passes (the health vitest case + a Swagger-spec smoke case).
 - [ ] `docker build -f apps/api/Dockerfile -t rapih-api .` succeeds from the repo root.
 - [ ] `docker run -p 3001:3001 -e NODE_ENV=production -e APP_PUBLIC_URL=https://app.local -e API_PUBLIC_URL=https://api.local rapih-api` starts and `/health` responds 200 with the envelope.
 - [ ] `apps/api/AGENTS.md` exists and contains all sections listed in § 6.
@@ -143,6 +152,7 @@ Every box must check before declaring done.
 
 - **Unit**: env loader rejects missing required vars with a descriptive error (vitest).
 - **Integration**: `GET /health` returns envelope with `service: 'api'` and the package version (vitest + `app.inject`).
+- **Integration**: `GET /docs/json` returns valid OpenAPI 3.0 JSON containing the `/health` path (vitest + `app.inject`).
 - **Docker**: manual `docker build` + `docker run` smoke test as listed in § 8 acceptance criteria.
 
 No CI yet — CI is a future feature.
@@ -157,9 +167,13 @@ No CI yet — CI is a future feature.
 | Resend wiring | `api-auth-email` |
 | Google/Apple sign-in | `api-auth-social` |
 | Device token registration | `api-devices` |
-| Shared `packages/db`, `packages/shared`, `packages/config` | introduced when 2nd consumer exists |
+| `packages/shared` (zod schemas shared with mobile) | `api-auth-email` (first chunk with mobile-consumed schemas) |
+| `packages/db` (Prisma client) | `api-auth-email` |
+| `packages/config` (shared TS / Biome) | introduced when 2nd app needs it (`cms-basics`) |
 | Worker apps scaffolds | `ai-worker-scaffold`, `reminder-worker-scaffold` |
-| Mobile API client | mobile-side feature, after auth chunk |
+| Mobile API client wrapper (`apps/mobile/src/lib/api.ts`) | mobile-side feature, after `api-auth-email` |
+| `packages/api-client` (SDK methods) | deferred — re-evaluate when both mobile and CMS consume many endpoints |
+| OpenAPI codegen | deferred — `/docs/json` is in place so it's trivial to add later via `openapi-typescript` |
 
 ## 11. Risks & mitigations
 
