@@ -1,3 +1,4 @@
+import { StatusBar } from 'expo-status-bar';
 import {
   KeyboardAvoidingView,
   Pressable,
@@ -6,13 +7,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { palette, textVariants, tint } from '@/theme';
-import { Text } from '@/components/ui';
 import { Icon } from '@/components/icons/icon';
+import { Text } from '@/components/ui';
 import { haptics } from '@/lib/haptics';
+import { palette, textVariants, tint } from '@/theme';
 
 const ONDARK = palette.onDark;
 
@@ -114,7 +114,7 @@ export function TanyaScreen() {
             <Text
               variant="figureS"
               style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.3 }}>
-              Halo Adelia! Aku sudah lihat aktivitas minggu ini.
+              Halo Ridho! Aku sudah lihat aktivitas minggu ini.
             </Text>
             <Text
               variant="body"

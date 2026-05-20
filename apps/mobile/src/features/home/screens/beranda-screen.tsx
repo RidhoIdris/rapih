@@ -6,8 +6,8 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { Monogram } from '@/components/brand';
 import { Icon } from '@/components/icons/icon';
 import { Glow, Screen, Skeleton, TabBar, Text } from '@/components/ui';
-import { haptics } from '@/lib/haptics';
 import { appIcons } from '@/lib/app-icons';
+import { haptics } from '@/lib/haptics';
 import { rupiah } from '@/lib/money';
 import { palette, tint } from '@/theme';
 
@@ -96,7 +96,7 @@ export function BerandaScreen() {
             <Monogram initials="AD" bg={palette.moss} fg={palette.lime} size={38} />
             <View>
               <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 11 }}>
-                Selamat pagi, Adelia
+                Selamat pagi, Ridho
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 1 }}>
                 <Text
@@ -278,23 +278,23 @@ export function BerandaScreen() {
                   height: 56,
                   borderRadius: 18,
                   borderCurve: 'continuous',
-                  backgroundColor: s.c,
+                  // backgroundColor: s.c,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: s.border
-                    ? `0 0 0 1px ${palette.inkFaint}`
-                    : undefined,
+                  // boxShadow: s.border
+                  //   ? `0 0 0 1px ${palette.inkFaint}`
+                  //   : undefined,
                 }}>
                 <View
                   style={{
-                    width: 30,
-                    height: 30,
+                    width: 56,
+                    height: 56,
                     borderRadius: 10,
                     backgroundColor: '#FFFFFF',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
-                  <Image source={s.icon} resizeMode="contain" style={{ width: 18, height: 18 }} />
+                  <Image source={s.icon} resizeMode="contain" style={{ width: 48, height: 48 }} />
                 </View>
               </View>
               <Text
