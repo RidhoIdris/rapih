@@ -85,7 +85,9 @@ export function TambahGoalScreen() {
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-            <Text style={{ fontSize: 24 }}>{selected.e}</Text>
+            <Text style={{ fontSize: 24, lineHeight: 28, includeFontPadding: false }}>
+              {selected.e}
+            </Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text

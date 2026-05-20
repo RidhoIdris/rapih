@@ -268,7 +268,8 @@ export function GoalsPanel() {
                 paddingHorizontal: 14,
                 borderRadius: 999,
                 backgroundColor: on ? palette.moss : palette.card,
-                boxShadow: on ? undefined : `0 0 0 1px ${palette.inkFaint}`,
+                borderWidth: 1,
+                borderColor: on ? palette.moss : palette.inkFaint,
               }}>
               <Text
                 variant="chip"

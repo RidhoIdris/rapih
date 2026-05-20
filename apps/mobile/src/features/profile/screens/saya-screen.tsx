@@ -31,7 +31,7 @@ const GROUPS: Group[] = [
   {
     title: 'Akun',
     items: [
-      { icon: '☺', label: 'Edit profil', to: '/(app)/edit-profil' },
+      { icon: '◎', label: 'Edit profil', to: '/(app)/edit-profil' },
       { icon: '◇', label: 'Dompet terhubung', tail: '8', to: '/(app)/dompet' },
       { icon: '◈', label: 'Aset & investasi', to: '/(app)/aset' },
       { icon: '⌘', label: 'Ekspor data', to: '/(app)/ekspor-data' },
@@ -76,7 +76,6 @@ const GROUPS: Group[] = [
 
 export function SayaScreen() {
   const router = useRouter();
-  const goPengaturan = () => router.push('/(app)/pengaturan' as Href);
   const goEditProfil = () => router.push('/(app)/edit-profil' as Href);
 
   return (
@@ -96,10 +95,7 @@ export function SayaScreen() {
             Saya
           </Text>
           <Pressable
-            onPress={() => {
-              haptics.tap();
-              goPengaturan();
-            }}
+            onPress={() => haptics.tap()}
             style={{
               width: 38,
               height: 38,

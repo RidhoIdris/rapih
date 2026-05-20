@@ -15,6 +15,7 @@ export function Monogram({
   bg?: string;
   fg?: string;
 }) {
+  const fontSize = size * 0.36;
   return (
     <View
       style={{
@@ -24,13 +25,17 @@ export function Monogram({
         backgroundColor: bg,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
       }}>
       <Text
         color={fg}
         style={{
           fontFamily: fontFamily.sans600,
-          fontSize: size * 0.36,
+          fontSize,
+          lineHeight: fontSize * 1.15,
           letterSpacing: 0.3,
+          includeFontPadding: false,
+          textAlignVertical: 'center',
         }}>
         {initials}
       </Text>

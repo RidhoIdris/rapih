@@ -23,17 +23,61 @@ const FREQS = [
   { l: 'Tahunan', sub: 'tiap tahun' },
 ] as const;
 
-const META: [string, string, string][] = [
-  ['🏦', 'Dari dompet', 'BCA · ····432'],
-  ['📅', 'Tanggal jatuh tempo', 'Setiap tgl 25'],
-  ['🔁', 'Auto-debit', 'Aktif'],
-  ['✎', 'Catatan', 'KPR rumah · 240 bulan'],
-];
+type MetaRow = [string, string, string];
+
+type KindConfig = {
+  amountLabel: string;
+  amount: string;
+  amountWords: string;
+  nameEmoji: string;
+  nameValue: string;
+  meta: MetaRow[];
+};
+
+const KIND_CONFIG: Record<Kind, KindConfig> = {
+  cicilan: {
+    amountLabel: 'Cicilan per periode',
+    amount: '5.800.000',
+    amountWords: 'lima juta delapan ratus ribu rupiah',
+    nameEmoji: '🏠',
+    nameValue: 'KPR rumah',
+    meta: [
+      ['📅', 'Jatuh tempo', 'Setiap tgl 25'],
+      ['🔢', 'Progres', 'ke-32 dari 240'],
+      ['✎', 'Catatan', 'KPR rumah Bintaro'],
+    ],
+  },
+  asuransi: {
+    amountLabel: 'Premi per periode',
+    amount: '450.000',
+    amountWords: 'empat ratus lima puluh ribu rupiah',
+    nameEmoji: '🛡️',
+    nameValue: 'BPJS Kesehatan',
+    meta: [
+      ['📅', 'Pembayaran', 'Setiap tgl 10'],
+      ['🩺', 'Jenis', 'Kesehatan'],
+      ['✎', 'Catatan', 'Premi keluarga'],
+    ],
+  },
+  langganan: {
+    amountLabel: 'Biaya berlangganan',
+    amount: '186.000',
+    amountWords: 'seratus delapan puluh enam ribu rupiah',
+    nameEmoji: '📺',
+    nameValue: 'Netflix Premium',
+    meta: [
+      ['📅', 'Periode berikutnya', '18 Jun 2026'],
+      ['👥', 'Patungan', '4 orang'],
+      ['✎', 'Catatan', 'Bareng Rio & Lia'],
+    ],
+  },
+};
 
 export function TambahRutinScreen() {
   const router = useRouter();
   const [kind, setKind] = useState<Kind>('cicilan');
   const [freqIdx, setFreqIdx] = useState(0);
+  const cfg = KIND_CONFIG[kind];
 
   return (
     <Screen background={palette.bg} bottomInset={28}>
@@ -102,7 +146,7 @@ export function TambahRutinScreen() {
           variant="label"
           color={palette.inkMute}
           style={{ fontSize: 11, letterSpacing: 1.5, fontWeight: '700' }}>
-          Nominal per periode
+          {cfg.amountLabel}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
           <Text variant="figureXL" color={palette.inkSoft} style={{ fontSize: 28, marginRight: 6 }}>
@@ -111,12 +155,12 @@ export function TambahRutinScreen() {
           <Text
             variant="figureXL"
             style={{ fontSize: 56, letterSpacing: -2.6, lineHeight: 56 }}>
-            5.800.000
+            {cfg.amount}
           </Text>
           <Caret height={48} />
         </View>
         <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 12, marginTop: 8 }}>
-          lima juta delapan ratus ribu rupiah
+          {cfg.amountWords}
         </Text>
       </View>
 
@@ -144,11 +188,13 @@ export function TambahRutinScreen() {
             flexDirection: 'row',
             alignItems: 'center',
           }}>
-          <Text style={{ fontSize: 16, marginRight: 10 }}>🏠</Text>
+          <Text style={{ fontSize: 16, lineHeight: 20, marginRight: 10, includeFontPadding: false }}>
+            {cfg.nameEmoji}
+          </Text>
           <Text
             variant="bodySm"
             style={{ fontSize: 15, fontWeight: '500', letterSpacing: -0.2 }}>
-            KPR rumah · BCA
+            {cfg.nameValue}
           </Text>
           <Caret height={16} />
         </View>
@@ -206,7 +252,7 @@ export function TambahRutinScreen() {
         </View>
       </View>
 
-      {/* meta rows */}
+      {/* meta rows — kind-specific */}
       <View
         style={{
           marginHorizontal: 18,
@@ -215,7 +261,7 @@ export function TambahRutinScreen() {
           borderRadius: 22,
           borderCurve: 'continuous',
         }}>
-        {META.map((r, i) => (
+        {cfg.meta.map((r, i) => (
           <View
             key={r[1]}
             style={{
@@ -224,17 +270,22 @@ export function TambahRutinScreen() {
               gap: 12,
               paddingVertical: 14,
               paddingHorizontal: 16,
-              borderBottomWidth: i < META.length - 1 ? 1 : 0,
+              borderBottomWidth: i < cfg.meta.length - 1 ? 1 : 0,
               borderBottomColor: palette.inkFaint,
             }}>
-            <Text style={{ fontSize: 16 }}>{r[0]}</Text>
+            <Text style={{ fontSize: 16, lineHeight: 20, includeFontPadding: false }}>
+              {r[0]}
+            </Text>
             <Text
               variant="bodySm"
               color={palette.inkMute}
               style={{ flex: 1, fontSize: 12, fontWeight: '500' }}>
               {r[1]}
             </Text>
-            <Text variant="bodySm" style={{ fontSize: 13, fontWeight: '500' }}>
+            <Text
+              variant="bodySm"
+              numberOfLines={1}
+              style={{ maxWidth: 160, fontSize: 13, fontWeight: '500' }}>
               {r[2]}
             </Text>
             <Icon name="chevronR" size={12} color={palette.inkMute} />

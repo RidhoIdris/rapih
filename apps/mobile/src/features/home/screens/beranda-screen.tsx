@@ -567,7 +567,15 @@ export function BerandaScreen() {
                 gap: 4,
                 marginTop: 4,
               }}>
-              <Text variant="figureM" style={{ fontSize: 28, letterSpacing: -1 }}>
+              <Text
+                variant="figureM"
+                style={{
+                  fontSize: 28,
+                  lineHeight: 38,
+                  letterSpacing: -1,
+                  includeFontPadding: false,
+                  paddingVertical: 2,
+                }}>
                 42%
               </Text>
               <View
@@ -770,9 +778,9 @@ export function BerandaScreen() {
                 Aktivitas
               </Text>
             </View>
-            <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 12 }}>
+            {/* <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 12 }}>
               3 perlu dicek
-            </Text>
+            </Text> */}
           </View>
           <View
             style={{
