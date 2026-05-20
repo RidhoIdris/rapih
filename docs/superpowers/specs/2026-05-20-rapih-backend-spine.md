@@ -296,6 +296,7 @@ Sub-project owner: which sub-project spec will design & implement this. See § 1
 | manual tier upgrade (CMS) | cms-basics | — | subscriptions | todo |
 | mayar checkout + webhook | billing-web | — | subscriptions | planned |
 | apple iap verify + webhook | billing-ios | — | subscriptions | planned |
+| privacy-hardening (E2EE + KMS) | privacy | — | — | planned |
 
 **Tier mapping is provisional.** Update this column as decisions firm up. The "TBD" answer is also valid — leave blank if not decided.
 
@@ -310,6 +311,7 @@ Each gets its own design spec in `docs/superpowers/specs/`, then its own plan in
 5. **reminder-worker** — scaffold `apps/worker-reminder`, cron scheduler, recurring auto-create, due / goal / streak push, weekly review generation. Expo Push integration.
 6. **billing-web** (planned) — Mayar.id integration, webhook handler, checkout creation, subscription lifecycle, CMS billing pages.
 7. **billing-ios** (planned) — Apple IAP receipt verification, Server-to-Server notifications, reconciliation with Mayar (don't double-bill).
+8. **privacy** (planned, deferred) — privacy hardening per § 17. Triggered by user count / market demand, not v1.
 
 ## 16. How to Add a Small Feature (Recipe)
 
@@ -331,12 +333,39 @@ Given a feature like *"add `attachment_url` to transactions"* or *"add goal mile
 
 If a feature touches multiple sub-projects (e.g. "scan struk OCR" touches receipts + ai-worker + mobile), the spec lists each surface but the plan is still a single artifact unless implementation order matters enough to split.
 
-## 17. Things This Spine Does NOT Decide
+## 17. Privacy & Security (v1 baseline only)
+
+**Explicit decision (2026-05-20):** advanced privacy (client-side encryption, zero-knowledge, KMS-managed keys) is **deferred until userbase exists**. The product needs to validate first; revisit when real users raise the concern or when the user count crosses a threshold worth investing.
+
+**v1 baseline (always-on, costs ~nothing):**
+- TLS for all traffic (Dokploy handles).
+- DB credentials scoped: API uses an app-role with limited grants; admin-role only for migrations.
+- Backups encrypted at the storage layer (whatever Dokploy/Postgres provider gives us).
+- Admin CMS does NOT display transaction/balance data — only user metadata (email, tier, last login, counts). Operator does not browse user financials in normal operation.
+- Passwords hashed with argon2id; never logged.
+- Bearer tokens never logged.
+- Webhook secrets rotated via env.
+
+**Honest framing for v1 (use in privacy policy):**
+> "Data Anda disimpan terenkripsi di tingkat penyimpanan dan ditransmisikan melalui koneksi terenkripsi. Kami tidak menjual data Anda. Akses operator ke data Anda dibatasi dan hanya dilakukan jika diperlukan untuk dukungan teknis atas permintaan Anda."
+
+Do NOT claim "we cannot read your data" or "zero-knowledge" — that requires the deferred hardening work.
+
+**Future hardening (see Feature Atlas row `privacy-hardening`):** when triggered, the candidate menu is captured below for future sessions:
+- Client-side encryption for `note`, `receipt_photo`, `custom_label` (Layer 2-style).
+- Smart structured logging UX so AI relies on structured fields, not notes (Ide A from brainstorming 2026-05-20).
+- KMS/HSM-backed envelope encryption for plaintext-at-rest sensitive columns.
+- Optional "Vault Mode" as a Pro tier opt-in (full E2EE with recovery phrase, ephemeral AI).
+
+Pick from this menu when revisiting; don't redo the brainstorm.
+
+## 18. Things This Spine Does NOT Decide
 
 - Exact Free / Plus / Pro feature split (in Feature Atlas as guidance, but TBD per row).
 - Pricing numbers (IDR per tier).
 - Internationalization beyond Bahasa Indonesia (out of scope v1).
 - Multi-workspace (keluarga / karyawan / umkm) — handoff design has it but backend treats v1 as single-workspace-per-user. Revisit before domain-crud locks schema.
+- Specific privacy hardening menu (see § 17 instead — that section is the authoritative location, not this one).
 - Web app's backend story — `apps/web` may consume the same API; PWA-specific concerns are not handled here.
 - Observability / logging stack (e.g. Sentry, Axiom). Add when first incident hurts.
 
