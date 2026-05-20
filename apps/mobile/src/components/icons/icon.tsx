@@ -17,6 +17,7 @@ export type IconName =
   | 'arrowDn'
   | 'arrowR'
   | 'chevronLeft'
+  | 'chevronR'
   | 'plus'
   | 'search'
   | 'mic'
@@ -28,7 +29,8 @@ export type IconName =
   | 'send'
   | 'filter'
   | 'doc'
-  | 'image';
+  | 'image'
+  | 'gear';
 
 type Props = {
   name: IconName;
@@ -46,6 +48,7 @@ const META: Record<IconName, { vb: string; size: number }> = {
   arrowDn: { vb: '0 0 12 12', size: 12 },
   arrowR: { vb: '0 0 12 12', size: 12 },
   chevronLeft: { vb: '0 0 14 14', size: 14 },
+  chevronR: { vb: '0 0 14 14', size: 14 },
   plus: { vb: '0 0 14 14', size: 14 },
   search: { vb: '0 0 16 16', size: 16 },
   mic: { vb: '0 0 14 14', size: 14 },
@@ -58,6 +61,7 @@ const META: Record<IconName, { vb: string; size: number }> = {
   filter: { vb: '0 0 14 14', size: 14 },
   doc: { vb: '0 0 14 14', size: 14 },
   image: { vb: '0 0 14 14', size: 14 },
+  gear: { vb: '0 0 16 16', size: 16 },
 };
 
 export function Icon({ name, size, color = palette.ink }: Props) {
@@ -125,6 +129,12 @@ export function Icon({ name, size, color = palette.ink }: Props) {
       return (
         <Svg {...common} fill="none">
           <Path d="M9 2L4 7l5 5" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+        </Svg>
+      );
+    case 'chevronR':
+      return (
+        <Svg {...common} fill="none">
+          <Path d="M5 2l5 5-5 5" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       );
     case 'plus':
@@ -237,6 +247,18 @@ export function Icon({ name, size, color = palette.ink }: Props) {
         <Svg {...common} fill="none">
           <Rect x={2} y={2} width={10} height={10} rx={1} stroke={color} strokeWidth={1.4} />
           <Path d="M2 9l3-3 3 3 4-4" stroke={color} strokeWidth={1.4} strokeLinejoin="round" />
+        </Svg>
+      );
+    case 'gear':
+      return (
+        <Svg {...common} fill="none">
+          <Circle cx={8} cy={8} r={2.4} stroke={color} strokeWidth={1.4} />
+          <Path
+            d="M8 1.5v2M8 12.5v2M14.5 8h-2M3.5 8h-2M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4M12.6 12.6l-1.4-1.4M4.8 4.8L3.4 3.4"
+            stroke={color}
+            strokeWidth={1.4}
+            strokeLinecap="round"
+          />
         </Svg>
       );
   }

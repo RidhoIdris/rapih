@@ -214,7 +214,10 @@ export function BerandaScreen() {
               <Icon name="search" size={16} color={palette.ink} />
             </Pressable>
             <Pressable
-              onPress={() => haptics.tap()}
+              onPress={() => {
+                haptics.tap();
+                router.push('/(app)/notifikasi' as Href);
+              }}
               style={{
                 width: 38,
                 height: 38,
