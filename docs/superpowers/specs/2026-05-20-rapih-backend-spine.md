@@ -36,6 +36,7 @@ CMS is **for the operator (Ridho) only**, not user-facing. Single admin login vi
 | Deploy | **Dokploy** (self-hosted) | One Dockerfile per app. DB + Redis = separate Dokploy services. |
 | Test runner | **Vitest** | Same in API and workers. |
 | Lint / format | **Biome** | Single tool, fast. (Replaces eslint + prettier.) |
+| Validation + OpenAPI | **Zod + `fastify-type-provider-zod` + `@fastify/swagger` + `@fastify/swagger-ui`** | One zod schema per route, validation + OpenAPI auto-derived. Swagger UI at `/docs` (dev only); JSON at `/docs/json`. |
 
 **Do not change any of the above without updating this Spine first.**
 
