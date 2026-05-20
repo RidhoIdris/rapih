@@ -23,9 +23,7 @@ type Mode = 'budget' | 'goal';
  *
  * FAB:
  *   • goal mode  → push /(app)/tambah-goal
- *   • budget mode → hidden (the dashed "+ Tambah envelope baru" inside
- *     the panel is the explicit add affordance, deferred until a
- *     tambah-budget screen exists).
+ *   • budget mode → push /(app)/tambah-budget
  */
 export function BudgetScreen() {
   const router = useRouter();
@@ -114,28 +112,30 @@ export function BudgetScreen() {
         {mode === 'budget' ? <BudgetPanel /> : <GoalsPanel />}
       </Screen>
 
-      {/* FAB — only when there's a real add destination */}
-      {mode === 'goal' && (
-        <Pressable
-          onPress={() => {
-            haptics.tap();
-            router.push('/(app)/tambah-goal' as Href);
-          }}
-          style={{
-            position: 'absolute',
-            right: 20,
-            bottom: insets.bottom + 84,
-            width: 56,
-            height: 56,
-            borderRadius: 56,
-            backgroundColor: palette.moss,
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 8px 22px rgba(31,42,31,0.32)',
-          }}>
-          <Icon name="plus" size={18} color={palette.lime} />
-        </Pressable>
-      )}
+      {/* FAB — different add destination per mode */}
+      <Pressable
+        onPress={() => {
+          haptics.tap();
+          router.push(
+            (mode === 'goal'
+              ? '/(app)/tambah-goal'
+              : '/(app)/tambah-budget') as Href,
+          );
+        }}
+        style={{
+          position: 'absolute',
+          right: 20,
+          bottom: insets.bottom + 84,
+          width: 56,
+          height: 56,
+          borderRadius: 56,
+          backgroundColor: palette.moss,
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 8px 22px rgba(31,42,31,0.32)',
+        }}>
+        <Icon name="plus" size={18} color={palette.lime} />
+      </Pressable>
 
       <TabBar active="budget" />
     </View>
