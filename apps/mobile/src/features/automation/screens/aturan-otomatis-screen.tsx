@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 
 import { palette, tint } from '@/theme';
 import { Screen, Text } from '@/components/ui';
@@ -145,7 +145,10 @@ export function AturanOtomatisScreen() {
           Aturan Otomatis
         </Text>
         <Pressable
-          onPress={() => haptics.tap()}
+          onPress={() => {
+            haptics.tap();
+            router.push('/(app)/aturan-riwayat' as Href);
+          }}
           style={{
             width: 38,
             height: 38,
@@ -154,7 +157,7 @@ export function AturanOtomatisScreen() {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-          <Icon name="more" size={14} color={palette.ink} />
+          <Icon name="doc" size={14} color={palette.ink} />
         </Pressable>
       </View>
 
@@ -300,9 +303,16 @@ export function AturanOtomatisScreen() {
             style={{ fontSize: 10.5, letterSpacing: 1.4, fontWeight: '700' }}>
             Aturan kamu · {activeCount} aktif
           </Text>
-          <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 11 }}>
-            {rules.length} total
-          </Text>
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              router.push('/(app)/aturan-riwayat' as Href);
+            }}
+            hitSlop={8}>
+            <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 11, fontWeight: '600' }}>
+              Riwayat →
+            </Text>
+          </Pressable>
         </View>
       </View>
 

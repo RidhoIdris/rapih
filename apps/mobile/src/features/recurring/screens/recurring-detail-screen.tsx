@@ -17,15 +17,15 @@ const META: [string, string][] = [
   ['Total dibayar', 'Rp 185,6jt'],
   ['Sisa pokok', 'Rp 162,4jt'],
   ['Bunga efektif', '6,75% / tahun'],
-  ['Auto debit', 'Aktif · tiap tgl 25'],
+  ['Reminder bayar', 'Aktif · tiap tgl 25'],
 ];
 
 const HISTORY = [
-  { d: '25 Apr 2026', amt: 5800000, status: 'paid' as const, src: 'BCA · auto' },
-  { d: '25 Mar 2026', amt: 5800000, status: 'paid' as const, src: 'BCA · auto' },
-  { d: '25 Feb 2026', amt: 5800000, status: 'paid' as const, src: 'BCA · auto' },
-  { d: '25 Jan 2026', amt: 5800000, status: 'late' as const, src: 'BCA · manual, +3 hari' },
-  { d: '25 Dec 2025', amt: 5800000, status: 'paid' as const, src: 'BCA · auto' },
+  { d: '25 Apr 2026', amt: 5800000, status: 'paid' as const, src: 'BCA · ditandai bayar' },
+  { d: '25 Mar 2026', amt: 5800000, status: 'paid' as const, src: 'BCA · ditandai bayar' },
+  { d: '25 Feb 2026', amt: 5800000, status: 'paid' as const, src: 'BCA · ditandai bayar' },
+  { d: '25 Jan 2026', amt: 5800000, status: 'late' as const, src: 'BCA · ditandai bayar, +3 hari' },
+  { d: '25 Dec 2025', amt: 5800000, status: 'paid' as const, src: 'BCA · ditandai bayar' },
 ];
 
 function HeaderBtn({ name, onPress }: { name: IconName; onPress: () => void }) {
@@ -162,7 +162,7 @@ export function RecurringDetailScreen() {
             Jatuh tempo 8 hari lagi
           </Text>
           <Text variant="bodySm" color="rgba(90,74,32,0.75)" style={{ fontSize: 11.5, marginTop: 1 }}>
-            25 Mei 2026 · saldo BCA cukup
+            25 Mei 2026 · jatuh tempo
           </Text>
         </View>
       </View>

@@ -210,7 +210,7 @@ export function RutinPanel() {
             KPR jatuh tempo 8 hari lagi
           </Text>
           <Text variant="bodySm" color="rgba(90,74,32,0.75)" style={{ fontSize: 11, marginTop: 1 }}>
-            Rp 5,8jt · 25 Mei · Saldo BCA cukup
+            Rp 5,8jt · 25 Mei · Dompet BCA
           </Text>
         </View>
         <Icon name="arrowR" size={14} color={tint.amberInk} />

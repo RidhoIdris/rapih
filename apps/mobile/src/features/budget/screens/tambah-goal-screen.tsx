@@ -319,7 +319,7 @@ export function TambahGoalScreen() {
           variant="bodySm"
           color="rgba(10,20,10,0.7)"
           style={{ fontSize: 11.5, marginTop: 4 }}>
-          Berdasarkan gaji & pengeluaran rutin kamu. Bisa diubah nanti.
+          Rapih catatkan otomatis ke goal ini tiap Senin. Bisa di-skip kapan aja.
         </Text>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
           <Pressable

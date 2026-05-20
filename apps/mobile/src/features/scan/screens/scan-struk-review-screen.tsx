@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 
@@ -9,22 +10,58 @@ import { haptics } from '@/lib/haptics';
 
 const ONDARK = palette.onDark;
 
-const ITEMS = [
-  { n: 'Indomie Goreng', q: '×2', a: 7000 },
-  { n: 'Aqua 600ml', q: '×1', a: 4500 },
-  { n: 'Sari Roti Coklat', q: '×1', a: 12000 },
-  { n: 'Pocari Sweat', q: '×2', a: 17000 },
-  { n: 'Telur Ayam 0,5kg', q: '×1', a: 14500 },
-];
-const TOTAL = ITEMS.reduce((s, r) => s + r.a, 0);
+type RawItem = {
+  name: string;
+  qty: number;
+  price: number;
+  cat: string;
+  tile: string;
+  ink: string;
+};
 
-const META: [string, string, string][] = [
-  ['🏦', 'Dari dompet', 'BCA · ····432'],
-  ['🍚', 'Catat ke budget', 'Kebutuhan'],
-];
+const RECEIPT = {
+  merchant: 'Indomaret Cikarang',
+  dateLabel: '17 Mei 2026 · 14:32',
+  items: [
+    { name: 'Indomilk UHT 1L', qty: 2, price: 18500, cat: 'Kebutuhan', tile: tint.mint, ink: tint.mintInk },
+    { name: 'Roti tawar Sari Roti', qty: 1, price: 22500, cat: 'Kebutuhan', tile: tint.mint, ink: tint.mintInk },
+    { name: 'Chitato 75g', qty: 2, price: 14000, cat: 'Senang-Senang', tile: tint.amber, ink: tint.amberInk },
+    { name: 'Aqua 600ml x4', qty: 1, price: 16000, cat: 'Kebutuhan', tile: tint.mint, ink: tint.mintInk },
+  ] as RawItem[],
+  ppn: 9350,
+  service: 0,
+  rounding: -50,
+};
+
+function allocate(items: RawItem[], fees: number) {
+  const subtotal = items.reduce((s, it) => s + it.qty * it.price, 0);
+  let assigned = 0;
+  return items.map((it, i) => {
+    const base = it.qty * it.price;
+    let share: number;
+    if (i === items.length - 1) {
+      share = fees - assigned;
+    } else {
+      share = Math.round((base / subtotal) * fees);
+      assigned += share;
+    }
+    return { ...it, base, share, recorded: base + share };
+  });
+}
 
 export function ScanStrukReviewScreen() {
   const router = useRouter();
+  const [mode, setMode] = useState<'per-item' | 'total'>('per-item');
+
+  const subtotal = useMemo(
+    () => RECEIPT.items.reduce((s, it) => s + it.qty * it.price, 0),
+    [],
+  );
+  const totalFees = RECEIPT.ppn + RECEIPT.service + RECEIPT.rounding;
+  const grandTotal = subtotal + totalFees;
+  const allocated = useMemo(() => allocate(RECEIPT.items, totalFees), [totalFees]);
+
+  const txCount = mode === 'per-item' ? RECEIPT.items.length : 1;
 
   return (
     <Screen background={palette.bg} bottomInset={28}>
@@ -49,103 +86,96 @@ export function ScanStrukReviewScreen() {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-          <Icon name="chevronLeft" size={14} color={palette.ink} />
+          <Icon name="x" size={12} color={palette.ink} />
         </Pressable>
         <Text variant="bodySm" style={{ fontSize: 12, fontWeight: '600' }}>
-          Cek Hasil Scan
+          Tinjau struk
         </Text>
         <View style={{ width: 38 }} />
       </View>
 
-      {/* merchant + total */}
-      <View
-        style={{
-          marginHorizontal: 18,
-          marginTop: 20,
-          paddingVertical: 20,
-          paddingHorizontal: 22,
-          borderRadius: 26,
-          borderCurve: 'continuous',
-          backgroundColor: palette.card,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 14,
-        }}>
-        <View
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 16,
-            borderCurve: 'continuous',
-            backgroundColor: tint.mint,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          <Text variant="bodySm" color={palette.moss} style={{ fontSize: 16, fontWeight: '800' }}>
-            IM
-          </Text>
-        </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text variant="bodySm" style={{ fontSize: 16, fontWeight: '700', letterSpacing: -0.3 }}>
-              Indomaret Sudirman
-            </Text>
-            <View
-              style={{
-                paddingVertical: 3,
-                paddingHorizontal: 7,
-                borderRadius: 999,
-                backgroundColor: palette.lime,
-              }}>
-              <Text variant="chip" color={palette.moss} style={{ fontSize: 9.5, fontWeight: '800', letterSpacing: 0.3 }}>
-                92%
-              </Text>
-            </View>
-          </View>
-          <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 11.5, marginTop: 2 }}>
-            17 Mei 2026 · 19:14 · QRIS BCA
-          </Text>
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text variant="figureM" style={{ fontSize: 24, letterSpacing: -0.7 }}>
-            {rupiah(-TOTAL)}
-          </Text>
-          <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 10.5, marginTop: 1 }}>
-            {ITEMS.length} item
-          </Text>
-        </View>
-      </View>
-
-      {/* AI banner */}
-      <View
-        style={{
-          marginHorizontal: 18,
-          marginTop: 10,
-          paddingVertical: 10,
-          paddingHorizontal: 14,
-          borderRadius: 14,
-          borderCurve: 'continuous',
-          backgroundColor: palette.limeSoft,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-        }}>
-        <Icon name="sparkle" size={14} color={palette.moss} />
-        <Text variant="bodySm" color={palette.moss} style={{ flex: 1, fontSize: 12, fontWeight: '600', lineHeight: 17 }}>
-          Rapih bantu rapikan: kategori otomatis ke{' '}
-          <Text variant="bodySm" color={palette.moss} style={{ fontSize: 12, fontWeight: '800' }}>
-            Kebutuhan
-          </Text>
-          . Ubah kalau perlu.
+      {/* merchant block */}
+      <View style={{ paddingHorizontal: 22, marginTop: 16 }}>
+        <Text
+          variant="label"
+          color={palette.inkMute}
+          style={{ fontSize: 10.5, letterSpacing: 1.4, fontWeight: '700' }}>
+          Dari struk
+        </Text>
+        <Text
+          variant="figureS"
+          style={{ fontSize: 24, lineHeight: 28, letterSpacing: -0.8, marginTop: 4 }}>
+          {RECEIPT.merchant}
+        </Text>
+        <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 12, marginTop: 2 }}>
+          {RECEIPT.dateLabel}
         </Text>
       </View>
 
-      {/* items */}
+      {/* save-mode segmented */}
+      <View
+        style={{
+          marginHorizontal: 18,
+          marginTop: 16,
+          flexDirection: 'row',
+          gap: 4,
+          backgroundColor: palette.card,
+          borderRadius: 999,
+          padding: 4,
+        }}>
+        {(['per-item', 'total'] as const).map((m) => {
+          const on = mode === m;
+          return (
+            <Pressable
+              key={m}
+              onPress={() => {
+                haptics.select();
+                setMode(m);
+              }}
+              style={{
+                flex: 1,
+                paddingVertical: 9,
+                borderRadius: 999,
+                alignItems: 'center',
+                backgroundColor: on ? palette.moss : 'transparent',
+              }}>
+              <Text
+                variant="chip"
+                color={on ? ONDARK : palette.inkSoft}
+                style={{ fontSize: 12.5, fontWeight: '700' }}>
+                {m === 'per-item' ? `Per item · ${RECEIPT.items.length}` : 'Total · 1'}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Text
+        variant="bodySm"
+        color={palette.inkSoft}
+        style={{
+          fontSize: 11.5,
+          lineHeight: 16,
+          marginTop: 8,
+          paddingHorizontal: 22,
+        }}>
+        {mode === 'per-item'
+          ? 'Tiap item jadi transaksi sendiri. Pajak & fee dibagi proporsional.'
+          : 'Semua item digabung jadi satu transaksi seukuran total struk.'}
+      </Text>
+
+      {/* items list */}
       <View style={{ marginHorizontal: 18, marginTop: 14 }}>
         <Text
           variant="label"
           color={palette.inkMute}
-          style={{ fontSize: 11, letterSpacing: 1.4, fontWeight: '700', paddingHorizontal: 4, paddingBottom: 8 }}>
+          style={{
+            fontSize: 11,
+            letterSpacing: 1.4,
+            fontWeight: '700',
+            paddingHorizontal: 4,
+            paddingBottom: 8,
+          }}>
           Item terdeteksi
         </Text>
         <View
@@ -154,65 +184,127 @@ export function ScanStrukReviewScreen() {
             borderRadius: 22,
             borderCurve: 'continuous',
           }}>
-          {ITEMS.map((r, i) => (
+          {allocated.map((r, i) => (
             <View
-              key={r.n}
+              key={r.name}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,
                 paddingVertical: 12,
                 paddingHorizontal: 14,
-                borderBottomWidth: i < ITEMS.length - 1 ? 1 : 0,
+                borderBottomWidth: i < allocated.length - 1 ? 1 : 0,
                 borderBottomColor: palette.inkFaint,
               }}>
-              <View
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 24,
-                  backgroundColor: palette.moss,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                <Icon name="check" size={12} color={palette.lime} />
-              </View>
+              {r.qty > 1 ? (
+                <View
+                  style={{
+                    minWidth: 28,
+                    paddingVertical: 4,
+                    paddingHorizontal: 6,
+                    borderRadius: 8,
+                    backgroundColor: palette.sand,
+                    alignItems: 'center',
+                  }}>
+                  <Text variant="mono" style={{ fontSize: 10.5, fontWeight: '700' }}>
+                    {r.qty}×
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ width: 28 }} />
+              )}
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
                   variant="bodySm"
                   numberOfLines={1}
-                  style={{ fontSize: 13.5, fontWeight: '500', letterSpacing: -0.2 }}>
-                  {r.n}
+                  style={{ fontSize: 13.5, fontWeight: '600', letterSpacing: -0.2 }}>
+                  {r.name}
                 </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                  <Text variant="mono" color={palette.inkMute} style={{ fontSize: 11 }}>
-                    {r.q}
+                <Pressable
+                  onPress={() => haptics.select()}
+                  style={{
+                    alignSelf: 'flex-start',
+                    paddingVertical: 2,
+                    paddingHorizontal: 7,
+                    borderRadius: 999,
+                    backgroundColor: r.tile,
+                    marginTop: 3,
+                  }}>
+                  <Text
+                    variant="chip"
+                    color={r.ink}
+                    style={{ fontSize: 9.5, fontWeight: '700' }}>
+                    {r.cat}
                   </Text>
-                  <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 11 }}>
-                    ·
-                  </Text>
-                  <View
-                    style={{
-                      paddingVertical: 1,
-                      paddingHorizontal: 7,
-                      borderRadius: 999,
-                      backgroundColor: palette.limeSoft,
-                    }}>
-                    <Text variant="chip" color={palette.moss} style={{ fontSize: 9.5, fontWeight: '700' }}>
-                      Kebutuhan
-                    </Text>
-                  </View>
-                </View>
+                </Pressable>
               </View>
-              <Text variant="mono" style={{ fontSize: 12.5, fontWeight: '600' }}>
-                {rupiah(r.a)}
-              </Text>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text variant="mono" style={{ fontSize: 12.5, fontWeight: '700' }}>
+                  {rupiah(r.base)}
+                </Text>
+                {mode === 'per-item' && r.share !== 0 ? (
+                  <Text
+                    variant="bodySm"
+                    color={palette.inkMute}
+                    style={{ fontSize: 10, marginTop: 2 }}>
+                    {r.share > 0 ? '+' : '−'} Rp{' '}
+                    {Math.abs(r.share).toLocaleString('id-ID')} fee
+                  </Text>
+                ) : null}
+              </View>
             </View>
           ))}
         </View>
       </View>
 
-      {/* meta */}
+      {/* breakdown */}
+      <View
+        style={{
+          marginHorizontal: 18,
+          marginTop: 12,
+          padding: 14,
+          borderRadius: 18,
+          borderCurve: 'continuous',
+          backgroundColor: palette.sand,
+          gap: 6,
+        }}>
+        {[
+          ['Subtotal', subtotal],
+          ['PPN 11%', RECEIPT.ppn],
+          ['Service', RECEIPT.service],
+          ['Pembulatan', RECEIPT.rounding],
+        ].map(([label, val]) =>
+          val === 0 ? null : (
+            <View
+              key={label as string}
+              style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 11.5 }}>
+                {label}
+              </Text>
+              <Text variant="mono" color={palette.ink} style={{ fontSize: 11.5 }}>
+                {rupiah(val as number)}
+              </Text>
+            </View>
+          ),
+        )}
+        <View
+          style={{
+            height: 1,
+            backgroundColor: palette.inkFaint,
+            marginVertical: 2,
+          }}
+        />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text variant="bodySm" style={{ fontSize: 12.5, fontWeight: '700' }}>
+            Total struk
+          </Text>
+          <Text variant="mono" style={{ fontSize: 13, fontWeight: '800' }}>
+            {rupiah(grandTotal)}
+          </Text>
+        </View>
+      </View>
+
+      {/* meta — wallet + date */}
       <View
         style={{
           marginHorizontal: 18,
@@ -221,19 +313,23 @@ export function ScanStrukReviewScreen() {
           borderRadius: 22,
           borderCurve: 'continuous',
         }}>
-        {META.map((r, i) => (
-          <View
+        {[
+          ['🏦', 'Dibayar dari', 'BCA Tahapan · ····432'],
+          ['📅', 'Tanggal', '17 Mei 2026 · hari ini'],
+        ].map((r, i) => (
+          <Pressable
             key={r[1]}
+            onPress={() => haptics.select()}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               gap: 12,
               paddingVertical: 14,
               paddingHorizontal: 16,
-              borderBottomWidth: i < META.length - 1 ? 1 : 0,
+              borderBottomWidth: i === 0 ? 1 : 0,
               borderBottomColor: palette.inkFaint,
             }}>
-            <Text style={{ fontSize: 16 }}>{r[0]}</Text>
+            <Text style={{ fontSize: 16, lineHeight: 20 }}>{r[0]}</Text>
             <Text
               variant="bodySm"
               color={palette.inkMute}
@@ -246,8 +342,31 @@ export function ScanStrukReviewScreen() {
             <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 14 }}>
               ›
             </Text>
-          </View>
+          </Pressable>
         ))}
+      </View>
+
+      {/* AI hint */}
+      <View
+        style={{
+          marginHorizontal: 18,
+          marginTop: 12,
+          paddingVertical: 12,
+          paddingHorizontal: 14,
+          borderRadius: 16,
+          borderCurve: 'continuous',
+          backgroundColor: palette.limeSoft,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+        }}>
+        <Icon name="sparkle" size={14} color={palette.moss} />
+        <Text
+          variant="bodySm"
+          color={palette.moss}
+          style={{ flex: 1, fontSize: 11.5, lineHeight: 17 }}>
+          Rapih udah pilihin kategori per item. Tap kategorinya buat ubah.
+        </Text>
       </View>
 
       <View style={{ flex: 1, minHeight: 16 }} />
@@ -263,8 +382,8 @@ export function ScanStrukReviewScreen() {
             flex: 1,
             height: 54,
             borderRadius: 27,
-            borderWidth: 1,
-            borderColor: palette.inkFaint,
+            backgroundColor: palette.card,
+            boxShadow: `0 0 0 1px ${palette.inkFaint}`,
             alignItems: 'center',
             justifyContent: 'center',
           }}>
@@ -289,7 +408,7 @@ export function ScanStrukReviewScreen() {
           }}>
           <Icon name="check" size={14} color={ONDARK} />
           <Text variant="button" color={ONDARK} style={{ fontSize: 15 }}>
-            Simpan transaksi
+            Simpan {txCount} transaksi
           </Text>
         </Pressable>
       </View>

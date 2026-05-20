@@ -13,7 +13,7 @@ const ONDARK = palette.onDark;
 const META: [string, string, string, string | null][] = [
   ['🏦', 'Dibayar dari', 'BCA Tahapan · ····432', 'Saldo Rp 8,4jt'],
   ['📅', 'Tanggal bayar', 'Hari ini · 17 Mei', '8 hari lebih cepat'],
-  ['📝', 'Catatan (opsional)', 'Auto-debit jalan', null],
+  ['📝', 'Catatan (opsional)', '—', null],
 ];
 
 export function TandaiBayarScreen() {

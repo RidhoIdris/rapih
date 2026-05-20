@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { palette } from '@/theme';
@@ -13,10 +13,10 @@ const ONDARK = palette.onDark;
 const SPARK =
   'M 0 42 L 30 38 L 60 44 L 90 30 L 120 36 L 150 28 L 180 32 L 210 22 L 240 26 L 270 18 L 300 24 L 320 14';
 
-const ACTIONS: { label: string; icon: IconName }[] = [
+const ACTIONS: { label: string; icon: IconName; to?: string }[] = [
   { label: 'Transfer', icon: 'arrowUp' },
   { label: 'Terima', icon: 'arrowDn' },
-  { label: 'Topup', icon: 'plus' },
+  { label: 'Sesuaikan', icon: 'swap', to: '/(app)/sesuaikan-saldo' },
   { label: 'Statement', icon: 'more' },
 ];
 
@@ -206,7 +206,10 @@ export function DompetDetailScreen() {
         {ACTIONS.map((a) => (
           <Pressable
             key={a.label}
-            onPress={() => haptics.tap()}
+            onPress={() => {
+              haptics.tap();
+              if (a.to) router.push(a.to as Href);
+            }}
             style={{
               flex: 1,
               paddingVertical: 12,

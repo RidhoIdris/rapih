@@ -63,10 +63,10 @@ const CATEGORIES = [
 ];
 
 const TX = [
-  { v: 'Tokopedia', s: 'Kebutuhan · 10:42', amt: -185000, tag: 'auto' },
-  { v: 'Gojek · GoFood', s: 'Senang-Senang · 09:14', amt: -68000, tag: 'auto' },
-  { v: 'Transfer dari Riska', s: 'Pemasukan · 08:30', amt: 200000, tag: 'in' },
-  { v: 'Starbucks Sudirman', s: 'Belum dirapikan · 07:51', amt: -47000, tag: 'new' },
+  { v: 'Tokopedia', s: 'Kebutuhan · 10:42', amt: -185000 },
+  { v: 'Gojek · GoFood', s: 'Senang-Senang · 09:14', amt: -68000 },
+  { v: 'Transfer dari Riska', s: 'Pemasukan · 08:30', amt: 200000 },
+  { v: 'Starbucks Sudirman', s: 'Senang-Senang · 07:51', amt: -47000 },
 ];
 
 export function BerandaScreen() {
@@ -795,12 +795,7 @@ export function BerandaScreen() {
                     width: 36,
                     height: 36,
                     borderRadius: 12,
-                    backgroundColor:
-                      t.tag === 'in'
-                        ? palette.lime
-                        : t.tag === 'new'
-                          ? tint.peach
-                          : palette.sand,
+                    backgroundColor: palette.sand,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>

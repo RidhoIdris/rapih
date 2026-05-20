@@ -1,5 +1,5 @@
 import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 
 import { palette } from '@/theme';
 import { Screen, Text } from '@/components/ui';
@@ -26,10 +26,10 @@ const EWALLETS: Provider[] = [
   { name: 'LinkAja', sub: 'Saldo & Syariah', c: '#e6231f' },
 ];
 
-function Row({ b, last }: { b: Provider; last: boolean }) {
+function Row({ b, last, onPress }: { b: Provider; last: boolean; onPress: () => void }) {
   return (
     <Pressable
-      onPress={() => haptics.select()}
+      onPress={onPress}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -76,7 +76,7 @@ function Row({ b, last }: { b: Provider; last: boolean }) {
   );
 }
 
-function SectionCard({ items }: { items: Provider[] }) {
+function SectionCard({ items, onPick }: { items: Provider[]; onPick: () => void }) {
   return (
     <View
       style={{
@@ -85,7 +85,7 @@ function SectionCard({ items }: { items: Provider[] }) {
         borderCurve: 'continuous',
       }}>
       {items.map((b, i) => (
-        <Row key={b.name} b={b} last={i === items.length - 1} />
+        <Row key={b.name} b={b} last={i === items.length - 1} onPress={onPick} />
       ))}
     </View>
   );
@@ -93,6 +93,10 @@ function SectionCard({ items }: { items: Provider[] }) {
 
 export function TambahDompetScreen() {
   const router = useRouter();
+  const pick = () => {
+    haptics.select();
+    router.push('/(app)/tambah-dompet-detail' as Href);
+  };
 
   return (
     <Screen background={palette.bg} bottomInset={28}>
@@ -150,7 +154,7 @@ export function TambahDompetScreen() {
       {/* quick: cash + custom */}
       <View style={{ marginHorizontal: 18, marginTop: 22, flexDirection: 'row', gap: 10 }}>
         <Pressable
-          onPress={() => haptics.select()}
+          onPress={pick}
           style={{
             flex: 1,
             padding: 16,
@@ -185,7 +189,7 @@ export function TambahDompetScreen() {
           </View>
         </Pressable>
         <Pressable
-          onPress={() => haptics.select()}
+          onPress={pick}
           style={{
             flex: 1,
             padding: 16,
@@ -249,7 +253,7 @@ export function TambahDompetScreen() {
             </Text>
           </View>
         </View>
-        <SectionCard items={BANKS} />
+        <SectionCard items={BANKS} onPick={pick} />
       </View>
 
       {/* e-wallet section */}
@@ -260,7 +264,7 @@ export function TambahDompetScreen() {
           style={{ fontSize: 11, letterSpacing: 1.4, fontWeight: '700', paddingHorizontal: 4, paddingBottom: 8 }}>
           E-Wallet
         </Text>
-        <SectionCard items={EWALLETS} />
+        <SectionCard items={EWALLETS} onPick={pick} />
       </View>
 
       {/* search hint */}
