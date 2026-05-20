@@ -2,7 +2,22 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> If you are a cloud executor (Kiro, etc.) running this without the skills runtime, follow the plan linearly: execute every step, run the verification command before claiming the step done, and commit per the commit step at the end of each task. If any verification fails, STOP and write a note in `docs/superpowers/notes/api-scaffold-blockers.md` describing the failure (command, output, what you tried). Do not improvise — the spec at `docs/superpowers/specs/2026-05-20-api-scaffold.md` and the Spine at `docs/superpowers/specs/2026-05-20-rapih-backend-spine.md` are authoritative.
+> If you are a cloud executor (Kiro, etc.) running this without the skills runtime, follow the plan linearly: execute every step, run the verification command before claiming the step done, and commit per the commit step at the end of each task.
+>
+> **STOP rules (do not improvise around these):**
+> - A test fails or asserts the wrong thing.
+> - `pnpm check` (tsc / biome) reports a real error in code you wrote.
+> - The repo is in an unexpected state (file already exists when it shouldn't, branch is not `main`, working tree is dirty before you started).
+> - A code-logic outcome diverges from what the plan claims will happen.
+>
+> **Environment-gap rules (use the fallback, then continue):**
+> - Tool version is higher than the plan names but in the same major-or-later range → use what's available.
+> - Tool is missing but a documented fallback exists in the same step → use the fallback.
+> - An action requires Docker / a daemon / a network resource that is unavailable → write the file artifact, commit it, add a one-line note in `docs/superpowers/notes/api-scaffold-blockers.md` ("Task N step M: docker not available in sandbox; deferred to human verification"), continue to the next step.
+>
+> If you hit a true STOP case, write a detailed note in `docs/superpowers/notes/api-scaffold-blockers.md` (command, output, what you tried) and pause.
+>
+> The spec at `docs/superpowers/specs/2026-05-20-api-scaffold.md` and the Spine at `docs/superpowers/specs/2026-05-20-rapih-backend-spine.md` are authoritative for design decisions — do not redecide stack, schema, or conventions.
 
 **Goal:** Stand up `apps/api/` as a deployable Fastify skeleton exposing `/health`, Swagger UI at `/docs` (dev-only), and an OpenAPI JSON spec at `/docs/json`. No database, no auth — just the empty house, conventions, and Dockerfile.
 
@@ -29,16 +44,17 @@ You need these in working memory: stack picks, monorepo layout, response envelop
 
 Path: `docs/superpowers/specs/2026-05-20-api-scaffold.md`. Sections 6, 8, and 12 are the contract you are executing against.
 
-- [ ] **Step 3: Verify toolchain**
+- [ ] **Step 3: Verify Node**
 
 Run:
 
 ```bash
 node --version
-corepack --version
 ```
 
-Expected: Node 22.x (any 22 minor) and corepack present. If Node is not 22.x, STOP and write a blocker — do not try to install Node.
+Expected: Node **22 or newer** (22.x, 24.x, etc. all fine for development — Fastify 5 / TS 5.7 / Vitest 2 / tsx 4 all support Node 22+). The production Docker image is pinned to `node:22-alpine` separately in Task 7 so the deploy artifact stays reproducible.
+
+If Node is older than 22, STOP — do not try to install Node yourself.
 
 - [ ] **Step 4: Verify repo state**
 
@@ -52,17 +68,26 @@ ls apps/api
 
 Expected: working directory is the repo root, `git status` shows clean tree on `main`, and `apps/api` is empty. If `apps/api` already has files, STOP and write a blocker.
 
-- [ ] **Step 5: Activate pnpm via corepack**
+- [ ] **Step 5: Make `pnpm` available**
 
-Run:
+First try corepack (the preferred path because the repo's `package.json` pins `packageManager: "pnpm@11.1.3"`):
 
 ```bash
-corepack enable
-corepack prepare pnpm@11.1.3 --activate
+corepack enable && corepack prepare pnpm@11.1.3 --activate && pnpm --version
+```
+
+If that prints `11.1.3`, you are done with this step.
+
+**Fallback (if corepack is not installed in this sandbox):**
+
+```bash
+npm install -g pnpm@11.1.3
 pnpm --version
 ```
 
-Expected: `pnpm --version` prints `11.1.3`.
+Either path is acceptable for this plan. `pnpm --version` must print `11.x` (exact 11.1.3 preferred — same as the repo's `packageManager` field).
+
+If neither command yields a working `pnpm`, STOP and write a blocker.
 
 No commit for this task — context loading only.
 
@@ -1096,13 +1121,18 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 CMD ["node", "dist/server.js"]
 ```
 
-- [ ] **Step 2: Verify Docker is available**
+- [ ] **Step 2: Check whether Docker is available**
 
 ```bash
 docker --version
 ```
 
-If Docker is not installed or not running, STOP and write a blocker in `docs/superpowers/notes/api-scaffold-blockers.md` describing it. The remaining steps in this task cannot be verified without Docker — note that the human will need to run them manually.
+If Docker is present and the daemon is reachable (`docker info` succeeds), continue with Steps 3-6 below.
+
+If Docker is **not** available in this sandbox (common for cloud agents):
+- Skip Steps 3-6.
+- Add one line to `docs/superpowers/notes/api-scaffold-blockers.md`: `Task 7 steps 3-6: docker not available in sandbox; Dockerfile written but build/run deferred to human verification.`
+- Jump directly to Step 7 (commit the Dockerfile only).
 
 - [ ] **Step 3: Build the image from the repo root**
 
@@ -1318,7 +1348,9 @@ pnpm --filter @rapih/api test
 
 Expected: all tests PASS across `env.test.ts`, `envelope.test.ts`, `errors.test.ts`, `health.test.ts`, `openapi.test.ts`.
 
-- [ ] **Step 6: Docker build + run**
+- [ ] **Step 6: Docker build + run (skip if Docker unavailable)**
+
+If `docker --version` worked back in Task 7 Step 2, run the full smoke:
 
 ```bash
 docker build -f apps/api/Dockerfile -t rapih-api:final .
@@ -1339,6 +1371,8 @@ Expected:
 - `/health` returns the success envelope.
 - `/docs` returns `404`.
 - `/docs/json` returns `200`.
+
+If Docker is unavailable, skip this step and add one line to the blockers note: `Task 9 step 6: docker not available; deferred to human verification.` Continue to the next step.
 
 - [ ] **Step 7: Confirm no secrets / no `console.log`**
 
