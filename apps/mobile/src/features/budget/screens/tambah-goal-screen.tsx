@@ -241,36 +241,42 @@ export function TambahGoalScreen() {
           }}>
           Ikon & kategori
         </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {PRESETS.map((p, i) => {
-            const sel = i === iconIdx;
-            return (
-              <Pressable
-                key={p.l}
-                onPress={() => {
-                  haptics.select();
-                  setIconIdx(i);
-                }}
-                style={{
-                  width: '23.5%',
-                  paddingVertical: 12,
-                  paddingHorizontal: 8,
-                  borderRadius: 16,
-                  borderCurve: 'continuous',
-                  backgroundColor: sel ? palette.ink : palette.card,
-                  alignItems: 'center',
-                  gap: 4,
-                }}>
-                <Text style={{ fontSize: 20 }}>{p.e}</Text>
-                <Text
-                  variant="bodySm"
-                  color={sel ? ONDARK : palette.ink}
-                  style={{ fontSize: 11, fontWeight: '600' }}>
-                  {p.l}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View style={{ gap: 8 }}>
+          {[0, 4].map((start) => (
+            <View key={start} style={{ flexDirection: 'row', gap: 8 }}>
+              {PRESETS.slice(start, start + 4).map((p, idx) => {
+                const i = start + idx;
+                const sel = i === iconIdx;
+                return (
+                  <Pressable
+                    key={p.l}
+                    onPress={() => {
+                      haptics.select();
+                      setIconIdx(i);
+                    }}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 14,
+                      paddingHorizontal: 6,
+                      borderRadius: 16,
+                      borderCurve: 'continuous',
+                      backgroundColor: sel ? palette.ink : palette.card,
+                      alignItems: 'center',
+                      gap: 6,
+                    }}>
+                    <Text style={{ fontSize: 22, lineHeight: 28 }}>{p.e}</Text>
+                    <Text
+                      variant="bodySm"
+                      color={sel ? ONDARK : palette.ink}
+                      numberOfLines={1}
+                      style={{ fontSize: 10.5, fontWeight: '700' }}>
+                      {p.l}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
         </View>
       </View>
 

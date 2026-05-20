@@ -103,8 +103,13 @@ function AktivitasPanel({ onTx }: { onTx: () => void }) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ marginTop: 14 }}
-        contentContainerStyle={{ paddingHorizontal: 18, gap: 6, flexDirection: 'row' }}>
+        style={{ marginTop: 14, overflow: 'visible' }}
+        contentContainerStyle={{
+          paddingHorizontal: 18,
+          paddingVertical: 3,
+          gap: 6,
+          flexDirection: 'row',
+        }}>
         {FILTERS.map((f, i) => {
           const active = i === 0;
           return (

@@ -1,86 +1,16 @@
-import type { ReactNode } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
-import Svg, { Circle, G, Path } from 'react-native-svg';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 
-import { palette, tint } from '@/theme';
-import { Glow, Screen, TabBar, Text } from '@/components/ui';
-import { Icon } from '@/components/icons/icon';
 import { Monogram } from '@/components/brand';
-import { rupiah } from '@/lib/money';
+import { Icon } from '@/components/icons/icon';
+import { Glow, Screen, Skeleton, TabBar, Text } from '@/components/ui';
 import { haptics } from '@/lib/haptics';
+import { rupiah } from '@/lib/money';
+import { palette, tint } from '@/theme';
 
 const ONDARK = '#f0f0e8';
-
-/* ── Pulse ring — single financial-health dial ────────────────────────── */
-function PulseRing({ score = 78, size = 152 }: { score?: number; size?: number }) {
-  const r = size / 2 - 14;
-  const C = 2 * Math.PI * r;
-  const arc = C * 0.78;
-  const gap = C - arc;
-  const dash = (score / 100) * arc;
-  const c = size / 2;
-  return (
-    <View style={{ width: size, height: size }}>
-      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <G rotation={126} origin={`${c}, ${c}`}>
-          <Circle
-            cx={c}
-            cy={c}
-            r={r}
-            fill="none"
-            stroke={palette.sand}
-            strokeWidth={12}
-            strokeLinecap="round"
-            strokeDasharray={`${arc} ${gap}`}
-          />
-          <Circle
-            cx={c}
-            cy={c}
-            r={r}
-            fill="none"
-            stroke={palette.lime}
-            strokeWidth={12}
-            strokeLinecap="round"
-            strokeDasharray={`${dash} ${C - dash}`}
-          />
-        </G>
-      </Svg>
-      <View
-        style={{
-          position: 'absolute',
-          inset: 0,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
-        }}>
-        <Text variant="figureXL" style={{ fontSize: 56, lineHeight: 58 }}>
-          {score}
-        </Text>
-        <Text
-          variant="label"
-          color={palette.inkSoft}
-          style={{ fontSize: 10, letterSpacing: 1.2 }}>
-          Pulse · Sehat
-        </Text>
-      </View>
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 18,
-          left: 0,
-          right: 0,
-          flexDirection: 'row',
-          justifyContent: 'center',
-          gap: 4,
-        }}>
-        <View style={{ width: 5, height: 5, borderRadius: 5, backgroundColor: palette.inkMute }} />
-        <View style={{ width: 5, height: 5, borderRadius: 5, backgroundColor: palette.ink }} />
-        <View style={{ width: 5, height: 5, borderRadius: 5, backgroundColor: palette.inkMute }} />
-      </View>
-    </View>
-  );
-}
 
 /* ── small shared bits ────────────────────────────────────────────────── */
 function Eyebrow({
@@ -99,35 +29,6 @@ function Eyebrow({
       style={[{ fontSize: 10, letterSpacing: 1.5 }, style]}>
       {children}
     </Text>
-  );
-}
-
-function Pill({
-  children,
-  bg = palette.sand,
-  color = palette.ink,
-  bold,
-}: {
-  children: ReactNode;
-  bg?: string;
-  color?: string;
-  bold?: boolean;
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        paddingVertical: 4,
-        paddingHorizontal: 9,
-        borderRadius: 999,
-        backgroundColor: bg,
-      }}>
-      <Text variant="chip" color={color} style={{ fontWeight: bold ? '600' : '500' }}>
-        {children}
-      </Text>
-    </View>
   );
 }
 
@@ -170,9 +71,14 @@ const TX = [
 
 export function BerandaScreen() {
   const router = useRouter();
-  const dailyAvg =
-    DAILY.slice(0, 17).reduce((s, x) => s + x, 0) / 17;
+  const dailyAvg = DAILY.slice(0, 17).reduce((s, x) => s + x, 0) / 17;
   const maxBar = 220;
+
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 750);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.bg }}>
@@ -189,13 +95,21 @@ export function BerandaScreen() {
             <Monogram initials="AD" bg={palette.moss} fg={palette.lime} size={38} />
             <View>
               <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 11 }}>
-                Selamat pagi,
+                Selamat pagi, Adelia
               </Text>
-              <Text
-                variant="bodySm"
-                style={{ fontSize: 15, fontWeight: '600', letterSpacing: -0.3 }}>
-                Adelia
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 1 }}>
+                <Text
+                  variant="figureS"
+                  style={{ fontSize: 18, lineHeight: 20, letterSpacing: -0.5 }}>
+                  Rp 24,8jt
+                </Text>
+                <Text
+                  variant="bodySm"
+                  color={palette.cool}
+                  style={{ fontSize: 10.5, fontWeight: '700' }}>
+                  ↑ 5,1%
+                </Text>
+              </View>
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -246,68 +160,16 @@ export function BerandaScreen() {
           </View>
         </View>
 
-        {/* ── hero — pulse + summary ── */}
-        <View
-          style={{
-            marginHorizontal: 18,
-            marginTop: 20,
-            padding: 20,
-            paddingBottom: 22,
-            borderRadius: 28,
-            borderCurve: 'continuous',
-            backgroundColor: palette.card,
-            boxShadow:
-              '0 1px 2px rgba(10,10,14,0.03), 0 8px 22px rgba(10,10,14,0.04)',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 16,
-          }}>
-          <PulseRing score={78} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Eyebrow style={{ fontWeight: '600' }}>Total Kekayaan</Eyebrow>
-            <Text variant="figureL" style={{ marginTop: 4 }}>
-              Rp 24,8
-              <Text variant="figureL" color={palette.inkMute}>
-                jt
-              </Text>
-            </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                marginTop: 7,
-              }}>
-              <Icon name="arrowUp" size={12} color={palette.cool} />
-              <Text
-                variant="bodySm"
-                color={palette.cool}
-                style={{ fontSize: 11.5, fontWeight: '500' }}>
-                Rp 1,2jt bulan ini
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', gap: 5, marginTop: 14 }}>
-              <Pill bg={palette.lime} color={palette.ink} bold>
-                <View
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 6,
-                    backgroundColor: palette.ink,
-                  }}
-                />
-                {'  '}7 hari rapih
-              </Pill>
-              <Pill>32% nabung</Pill>
-            </View>
+        {/* ── AI insight (the dashboard's spotlight) ── */}
+        {loading ? (
+          <View style={{ marginHorizontal: 18, marginTop: 22 }}>
+            <Skeleton height={150} borderRadius={24} />
           </View>
-        </View>
-
-        {/* ── AI insight ── */}
+        ) : (
         <View
           style={{
             marginHorizontal: 18,
-            marginTop: 14,
+            marginTop: 22,
             padding: 16,
             paddingHorizontal: 18,
             borderRadius: 24,
@@ -353,7 +215,10 @@ export function BerandaScreen() {
           </Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Pressable
-              onPress={() => haptics.tap()}
+              onPress={() => {
+                haptics.tap();
+                router.push('/(app)/aturan-otomatis' as Href);
+              }}
               style={{
                 flex: 1,
                 height: 38,
@@ -386,6 +251,7 @@ export function BerandaScreen() {
             </Pressable>
           </View>
         </View>
+        )}
 
         {/* ── quick access ── */}
         <ScrollView
@@ -460,6 +326,11 @@ export function BerandaScreen() {
         </View>
 
         {/* ── daily bars + projection ── */}
+        {loading ? (
+          <View style={{ marginHorizontal: 18, marginTop: 12 }}>
+            <Skeleton height={200} borderRadius={22} />
+          </View>
+        ) : (
         <View
           style={{
             marginHorizontal: 18,
@@ -599,6 +470,7 @@ export function BerandaScreen() {
             </View>
           </View>
         </View>
+        )}
 
         {/* ── cash flow + savings rate ── */}
         <View

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { palette, tint } from '@/theme';
@@ -35,12 +35,19 @@ const SAMPLE_CAPS = [
   { l: 'Rp 5jt', v: 5_000_000 },
 ];
 
+function parseDigits(s: string): number {
+  const d = s.replace(/[^\d]/g, '');
+  return d ? parseInt(d, 10) : 0;
+}
+
 export function TambahBudgetScreen() {
   const router = useRouter();
   const [presetIdx, setPresetIdx] = useState(1);
-  const [capIdx, setCapIdx] = useState(1);
+  const [capIdx, setCapIdx] = useState<number | null>(1);
+  const [customRaw, setCustomRaw] = useState('');
   const sel = PRESETS[presetIdx];
-  const cap = SAMPLE_CAPS[capIdx].v;
+  const customVal = parseDigits(customRaw);
+  const cap = capIdx !== null ? SAMPLE_CAPS[capIdx].v : customVal;
 
   return (
     <Screen background={palette.bg} bottomInset={28}>
@@ -68,12 +75,12 @@ export function TambahBudgetScreen() {
           <Icon name="x" size={12} color={palette.ink} />
         </Pressable>
         <Text variant="bodySm" style={{ fontSize: 12, fontWeight: '600' }}>
-          Envelope Baru
+          Budget Baru
         </Text>
         <View style={{ width: 38 }} />
       </View>
 
-      {/* preview hero — live envelope row */}
+      {/* preview hero — live budget row */}
       <View
         style={{
           marginHorizontal: 18,
@@ -107,7 +114,7 @@ export function TambahBudgetScreen() {
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-            <Text style={{ fontSize: 20 }}>{sel.emoji}</Text>
+            <Text style={{ fontSize: 20, lineHeight: 26 }}>{sel.emoji}</Text>
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text
@@ -120,19 +127,9 @@ export function TambahBudgetScreen() {
               variant="bodySm"
               color={palette.inkMute}
               style={{ fontSize: 11, marginTop: 2 }}>
-              Plafon {rupiah(cap, { short: true })} · 0% terpakai
+              Plafon {cap > 0 ? rupiah(cap, { short: true }) : '—'} · bulanan
             </Text>
           </View>
-        </View>
-        <View
-          style={{
-            height: 6,
-            borderRadius: 6,
-            marginTop: 14,
-            backgroundColor: palette.sand,
-            overflow: 'hidden',
-          }}>
-          <View style={{ height: '100%', width: '0%', backgroundColor: sel.ink }} />
         </View>
       </View>
 
@@ -148,7 +145,7 @@ export function TambahBudgetScreen() {
             paddingHorizontal: 4,
             paddingBottom: 8,
           }}>
-          Nama envelope
+          Nama budget
         </Text>
         <View
           style={{
@@ -160,7 +157,7 @@ export function TambahBudgetScreen() {
             flexDirection: 'row',
             alignItems: 'center',
           }}>
-          <Text style={{ fontSize: 16, marginRight: 10 }}>{sel.emoji}</Text>
+          <Text style={{ fontSize: 16, marginRight: 10, lineHeight: 22 }}>{sel.emoji}</Text>
           <Text
             variant="bodySm"
             style={{ fontSize: 15, fontWeight: '500', letterSpacing: -0.2 }}>
@@ -195,16 +192,16 @@ export function TambahBudgetScreen() {
                   setPresetIdx(i);
                 }}
                 style={{
-                  width: '31.5%',
-                  paddingVertical: 12,
+                  width: '31%',
+                  paddingVertical: 14,
                   paddingHorizontal: 8,
                   borderRadius: 16,
                   borderCurve: 'continuous',
                   backgroundColor: on ? palette.ink : palette.card,
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 6,
                 }}>
-                <Text style={{ fontSize: 22 }}>{p.emoji}</Text>
+                <Text style={{ fontSize: 22, lineHeight: 28 }}>{p.emoji}</Text>
                 <Text
                   variant="bodySm"
                   color={on ? ONDARK : palette.ink}
@@ -241,6 +238,7 @@ export function TambahBudgetScreen() {
                 onPress={() => {
                   haptics.select();
                   setCapIdx(i);
+                  setCustomRaw('');
                 }}
                 style={{
                   flex: 1,
@@ -260,6 +258,49 @@ export function TambahBudgetScreen() {
               </Pressable>
             );
           })}
+        </View>
+
+        {/* manual cap input */}
+        <View
+          style={{
+            marginTop: 8,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderRadius: 14,
+            borderCurve: 'continuous',
+            backgroundColor: palette.card,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow:
+              capIdx === null && customVal > 0
+                ? `0 0 0 1.5px ${palette.moss}`
+                : `0 0 0 1px ${palette.inkFaint}`,
+          }}>
+          <Text
+            variant="mono"
+            color={palette.inkMute}
+            style={{ fontSize: 12, fontWeight: '700' }}>
+            Rp
+          </Text>
+          <TextInput
+            value={customRaw ? parseDigits(customRaw).toLocaleString('id-ID') : ''}
+            onChangeText={(t) => {
+              setCustomRaw(t);
+              if (t.replace(/[^\d]/g, '').length > 0) setCapIdx(null);
+            }}
+            onFocus={() => setCapIdx(null)}
+            keyboardType="number-pad"
+            placeholder="Ketik plafon sendiri"
+            placeholderTextColor={palette.inkMute}
+            style={{
+              flex: 1,
+              fontFamily: 'Mono-500',
+              fontSize: 13,
+              color: palette.ink,
+              padding: 0,
+            }}
+          />
         </View>
       </View>
 
@@ -282,7 +323,7 @@ export function TambahBudgetScreen() {
           variant="bodySm"
           color={palette.moss}
           style={{ flex: 1, fontSize: 11.5, lineHeight: 17 }}>
-          Rapih bakal kasih notif kalau envelope ini sudah 80% penuh.
+          Rapih bakal kasih notif kalau budget ini sudah 80% penuh.
         </Text>
       </View>
 
@@ -306,7 +347,7 @@ export function TambahBudgetScreen() {
           }}>
           <Icon name="check" size={14} color={ONDARK} />
           <Text variant="button" color={ONDARK} style={{ fontSize: 15 }}>
-            Buat envelope
+            Buat budget
           </Text>
         </Pressable>
       </View>

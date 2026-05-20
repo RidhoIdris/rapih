@@ -10,5 +10,6 @@ export { Glow } from './glow';
 export { ProgressDots } from './progress-dots';
 export { BackButton } from './back-button';
 export { LabeledDivider } from './divider';
+export { Skeleton } from './skeleton';
 export { TabBar } from './tab-bar';
 export type { TabId } from './tab-bar';

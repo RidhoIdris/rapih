@@ -67,7 +67,7 @@ export function TabBar({ active, onTab }: Props) {
     }
     if (id === active) return;
     const to = ROUTES[id];
-    if (to) router.push(to);
+    if (to) router.replace(to);
   };
 
   return (
