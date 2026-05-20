@@ -1,4 +1,5 @@
 import { Pressable, View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 
 import { palette, tint } from '@/theme';
 import { Glow, Text } from '@/components/ui';
@@ -156,7 +157,12 @@ function BucketRow({
  * Budget hub. Standalone — no header, no Screen, no TabBar.
  */
 export function BudgetPanel({ onRow }: { onRow?: () => void } = {}) {
+  const router = useRouter();
   const tap = onRow ?? (() => haptics.tap());
+  const goAdd = () => {
+    haptics.tap();
+    router.push('/(app)/tambah-budget' as Href);
+  };
   return (
     <View style={{ paddingBottom: 8 }}>
       {/* hero — total alokasi */}
@@ -313,7 +319,7 @@ export function BudgetPanel({ onRow }: { onRow?: () => void } = {}) {
 
       {/* dashed add */}
       <Pressable
-        onPress={() => haptics.tap()}
+        onPress={goAdd}
         style={{
           marginHorizontal: 18,
           marginTop: 18,

@@ -101,12 +101,14 @@ src/
                                            (mode from `?mode=goal` param);
                                            FAB is mode-aware: Goal → push
                                            /(app)/tambah-goal; Budget →
-                                           hidden (deferred until a
-                                           tambah-budget screen exists).
+                                           push /(app)/tambah-budget.
       screens/goal-detail-screen.tsx       single goal detail (moss hero +
                                            ritme nabung bars)
       screens/tambah-goal-screen.tsx       create goal (preview + form +
                                            icon picker + AI rhythm)
+      screens/tambah-budget-screen.tsx     create envelope (live preview
+                                           row + 6-emoji category picker
+                                           + plafon picker)
     profile/
       screens/saya-screen.tsx              profile tab (TabBar) — gear in
                                            header → /(app)/pengaturan
@@ -131,7 +133,7 @@ src/
     (app)/scan-struk.tsx · scan-struk-review.tsx (from hub FAB / Beranda tile)
     (app)/rutin-detail.tsx · tandai-bayar.tsx (transparentModal in _layout)
     (app)/tambah-rutin.tsx (from Rutin FAB / dashed "Tambah tagihan rutin")
-    (app)/goal-detail.tsx · tambah-goal.tsx (from Budget hub Goal mode)
+    (app)/goal-detail.tsx · tambah-goal.tsx · tambah-budget.tsx (from Budget hub)
     (app)/saya.tsx · pengaturan.tsx · notifikasi.tsx
 ```
 
