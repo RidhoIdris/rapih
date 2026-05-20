@@ -1,12 +1,13 @@
 import { useRouter, type Href } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Image, Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Monogram } from '@/components/brand';
 import { Icon } from '@/components/icons/icon';
 import { Glow, Screen, Skeleton, TabBar, Text } from '@/components/ui';
 import { haptics } from '@/lib/haptics';
+import { appIcons } from '@/lib/app-icons';
 import { rupiah } from '@/lib/money';
 import { palette, tint } from '@/theme';
 
@@ -34,7 +35,7 @@ function Eyebrow({
 
 type QuickItem = {
   l: string;
-  e: string;
+  icon: number;
   c: string;
   tc: string;
   border?: boolean;
@@ -42,12 +43,12 @@ type QuickItem = {
 };
 
 const QUICK: QuickItem[] = [
-  { l: 'Scan struk', e: '📸', c: tint.amber, tc: tint.amberInk, to: '/(app)/scan-struk' },
-  { l: 'Dompet', e: '👛', c: tint.mint, tc: tint.mintInk, to: '/(app)/dompet' },
-  { l: 'Transaksi', e: '↗', c: palette.limeSoft, tc: palette.moss, to: '/(app)/transaksi' },
-  { l: 'Aset', e: '📈', c: tint.iris, tc: tint.irisInk, to: '/(app)/aset' },
-  { l: 'Tagihan', e: '📅', c: tint.peach, tc: tint.peachInk, to: '/(app)/transaksi?mode=rutin' },
-  { l: 'Goal', e: '◇', c: palette.card, tc: palette.ink, border: true, to: '/(app)/budget?mode=goal' },
+  { l: 'Scan struk', icon: appIcons.scan, c: tint.amber, tc: tint.amberInk, to: '/(app)/scan-struk' },
+  { l: 'Dompet', icon: appIcons.dompet, c: tint.mint, tc: tint.mintInk, to: '/(app)/dompet' },
+  { l: 'Transaksi', icon: appIcons.transaksi, c: palette.limeSoft, tc: palette.moss, to: '/(app)/transaksi' },
+  { l: 'Aset', icon: appIcons.aset, c: tint.iris, tc: tint.irisInk, to: '/(app)/aset' },
+  { l: 'Tagihan', icon: appIcons.tagihan, c: tint.peach, tc: tint.peachInk, to: '/(app)/transaksi?mode=rutin' },
+  { l: 'Goal', icon: appIcons.goal, c: palette.card, tc: palette.ink, border: true, to: '/(app)/budget?mode=goal' },
 ];
 
 const DAILY = [
@@ -284,9 +285,17 @@ export function BerandaScreen() {
                     ? `0 0 0 1px ${palette.inkFaint}`
                     : undefined,
                 }}>
-                <Text style={{ fontSize: 22 }} color={s.tc}>
-                  {s.e}
-                </Text>
+                <View
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 10,
+                    backgroundColor: '#FFFFFF',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <Image source={s.icon} resizeMode="contain" style={{ width: 18, height: 18 }} />
+                </View>
               </View>
               <Text
                 variant="bodySm"
