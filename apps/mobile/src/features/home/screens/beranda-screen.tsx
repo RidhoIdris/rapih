@@ -144,9 +144,9 @@ const QUICK: QuickItem[] = [
   { l: 'Scan struk', e: '📸', c: tint.amber, tc: tint.amberInk, to: '/(app)/scan-struk' },
   { l: 'Dompet', e: '👛', c: tint.mint, tc: tint.mintInk, to: '/(app)/dompet' },
   { l: 'Transaksi', e: '↗', c: palette.limeSoft, tc: palette.moss, to: '/(app)/transaksi' },
-  { l: 'Aset', e: '📈', c: tint.iris, tc: tint.irisInk },
+  { l: 'Aset', e: '📈', c: tint.iris, tc: tint.irisInk, to: '/(app)/aset' },
   { l: 'Tagihan', e: '📅', c: tint.peach, tc: tint.peachInk, to: '/(app)/transaksi?mode=rutin' },
-  { l: 'Goal', e: '◇', c: palette.card, tc: palette.ink, border: true },
+  { l: 'Goal', e: '◇', c: palette.card, tc: palette.ink, border: true, to: '/(app)/budget?mode=goal' },
 ];
 
 const DAILY = [
@@ -452,9 +452,11 @@ export function BerandaScreen() {
               · 17 hari
             </Text>
           </View>
-          <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 12 }}>
-            Detail →
-          </Text>
+          <Pressable onPress={() => { haptics.tap(); router.push('/(app)/transaksi' as Href); }}>
+            <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 12 }}>
+              Detail →
+            </Text>
+          </Pressable>
         </View>
 
         {/* ── daily bars + projection ── */}
@@ -787,7 +789,11 @@ export function BerandaScreen() {
             flexDirection: 'row',
             gap: 10,
           }}>
-          <View
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              router.push('/(app)/transaksi?mode=rutin' as Href);
+            }}
             style={{
               flex: 1,
               padding: 14,
@@ -815,8 +821,12 @@ export function BerandaScreen() {
               <Text style={{ fontSize: 18 }}>📺</Text>
               <Text style={{ fontSize: 18 }}>📡</Text>
             </View>
-          </View>
-          <View
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              router.push('/(app)/budget?mode=goal' as Href);
+            }}
             style={{
               flex: 1,
               padding: 14,
@@ -862,10 +872,8 @@ export function BerandaScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </Pressable>
         </View>
-
-        {/* ── recent transactions ── */}
         <View style={{ marginHorizontal: 18, marginTop: 24 }}>
           <View
             style={{
@@ -897,7 +905,10 @@ export function BerandaScreen() {
             {TX.map((t, i) => (
               <Pressable
                 key={t.v}
-                onPress={() => haptics.tap()}
+                onPress={() => {
+                  haptics.tap();
+                  router.push('/(app)/transaksi-detail' as Href);
+                }}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
