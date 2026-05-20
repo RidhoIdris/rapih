@@ -29,36 +29,46 @@ type Group = { title: string; items: Row[] };
 
 const GROUPS: Group[] = [
   {
-    title: 'Akun & finansial',
+    title: 'Akun',
     items: [
+      { icon: '☺', label: 'Edit profil', to: '/(app)/edit-profil' },
       { icon: '◇', label: 'Dompet terhubung', tail: '8', to: '/(app)/dompet' },
-      { icon: '☷', label: 'Profil & data pribadi' },
-      { icon: '✦', label: 'Bahasa & mata uang', tail: 'ID · Rp', to: '/(app)/pengaturan' },
-      { icon: '⌘', label: 'Ekspor data' },
+      { icon: '◈', label: 'Aset & investasi', to: '/(app)/aset' },
+      { icon: '⌘', label: 'Ekspor data', to: '/(app)/ekspor-data' },
     ],
   },
   {
-    title: 'Notifikasi & AI',
+    title: 'Otomatisasi & AI',
     items: [
-      { icon: '◔', label: 'Notifikasi push', to: '/(app)/pengaturan' },
-      { icon: '☆', label: 'Pengingat kebiasaan', tail: 'aktif' },
+      { icon: '✦', label: 'Aturan otomatis', tail: '12 aktif', to: '/(app)/aturan-otomatis' },
+      { icon: '↺', label: 'Riwayat aturan', to: '/(app)/aturan-riwayat' },
       { icon: '✺', label: 'Rapih AI · gaya bahasa', tail: 'Santai', to: '/(app)/pengaturan' },
+    ],
+  },
+  {
+    title: 'Notifikasi',
+    items: [
+      { icon: '◔', label: 'Inbox notifikasi', tail: '3 baru', to: '/(app)/notifikasi' },
+      { icon: '◑', label: 'Pengaturan notifikasi', to: '/(app)/pengaturan' },
     ],
   },
   {
     title: 'Keamanan',
     items: [
-      { icon: '⏚', label: 'Face ID', tail: 'aktif' },
-      { icon: '⊡', label: 'PIN aplikasi' },
-      { icon: '☁', label: 'Cadangan iCloud', tail: 'tiap hari' },
+      { icon: '⏚', label: 'PIN, biometrik & cadangan', tail: 'aktif', to: '/(app)/keamanan' },
     ],
   },
   {
-    title: 'Lainnya',
+    title: 'Tampilan',
     items: [
-      { icon: '◑', label: 'Tema tampilan', tail: 'Otomatis', to: '/(app)/pengaturan' },
-      { icon: '?', label: 'Pusat bantuan' },
-      { icon: '✉', label: 'Hubungi tim Rapih' },
+      { icon: '◐', label: 'Tema & bahasa', tail: 'Otomatis · ID', to: '/(app)/pengaturan' },
+    ],
+  },
+  {
+    title: 'Bantuan',
+    items: [
+      { icon: '?', label: 'Pusat bantuan', to: '/(app)/bantuan' },
+      { icon: 'ⓘ', label: 'Tentang Rapih', tail: 'v1.4.0', to: '/(app)/tentang' },
       { icon: '✕', label: 'Keluar', danger: true },
     ],
   },
@@ -67,6 +77,7 @@ const GROUPS: Group[] = [
 export function SayaScreen() {
   const router = useRouter();
   const goPengaturan = () => router.push('/(app)/pengaturan' as Href);
+  const goEditProfil = () => router.push('/(app)/edit-profil' as Href);
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.bg }}>
@@ -104,7 +115,11 @@ export function SayaScreen() {
         </View>
 
         {/* profile hero */}
-        <View
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            goEditProfil();
+          }}
           style={{
             marginHorizontal: 18,
             marginTop: 22,
@@ -144,7 +159,8 @@ export function SayaScreen() {
               />
             </View>
           </View>
-        </View>
+          <Icon name="chevronR" size={12} color={palette.inkMute} />
+        </Pressable>
 
         {/* stats */}
         <View
@@ -249,7 +265,7 @@ export function SayaScreen() {
                       {it.tail}
                     </Text>
                   )}
-                  {!it.danger && <Icon name="chevronR" size={12} color={palette.inkMute} />}
+                  {!it.danger && it.to && <Icon name="chevronR" size={12} color={palette.inkMute} />}
                 </Pressable>
               ))}
             </View>
