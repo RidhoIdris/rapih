@@ -6,12 +6,18 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
+import authDecorators from './auth/decorators.js';
 import { loadEnv } from './config/env.js';
 import { registerErrorHandler } from './lib/errors.js';
+import dbPlugin from './plugins/db.js';
 import { registerSwagger } from './plugins/swagger.js';
 import { registerRoutes } from './routes/index.js';
 
-export async function buildApp(): Promise<FastifyInstance> {
+/**
+ * Build the Fastify app with all plugins registered but NOT yet ready().
+ * Use this when you need to add routes before calling ready() (e.g. tests).
+ */
+export async function buildRawApp(): Promise<FastifyInstance> {
   const env = loadEnv();
   const isDev = env.NODE_ENV === 'development';
 
@@ -32,10 +38,22 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(sensible);
   await app.register(cors, { origin: [env.APP_PUBLIC_URL], credentials: true });
+  await app.register(dbPlugin);
+  await app.register(authDecorators);
   await registerSwagger(app);
 
   registerErrorHandler(app, { nodeEnv: env.NODE_ENV });
   await registerRoutes(app);
 
+  return app;
+}
+
+/**
+ * Build and initialize the Fastify app (calls ready() internally).
+ * Use this for production and most tests.
+ */
+export async function buildApp(): Promise<FastifyInstance> {
+  const app = await buildRawApp();
+  await app.ready();
   return app;
 }
