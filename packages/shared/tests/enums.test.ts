@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-    IncomeRangeSchema,
-    PrimaryGoalSchema,
-    SocialProviderSchema,
-    UserTierSchema,
-    incomeRangeLabel,
-    primaryGoalLabel,
+  IncomeRangeSchema,
+  incomeRangeLabel,
+  PrimaryGoalSchema,
+  primaryGoalLabel,
+  SocialProviderSchema,
+  UserTierSchema,
 } from '../src/auth/enums.js';
 
 describe('auth enums', () => {

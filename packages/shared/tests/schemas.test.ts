@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-    AppleSignInBody,
-    AuthSessionResponse,
-    GoogleSignInBody,
-    LogoutBody,
-    MeResponse,
-    OnboardingBody,
-    RefreshBody,
-    UserDto,
+  AppleSignInBody,
+  AuthSessionResponse,
+  GoogleSignInBody,
+  LogoutBody,
+  MeResponse,
+  OnboardingBody,
+  RefreshBody,
+  UserDto,
 } from '../src/auth/schemas.js';
 
 describe('auth schemas', () => {
@@ -23,11 +23,11 @@ describe('auth schemas', () => {
       AppleSignInBody.safeParse({
         id_token: 'abc',
         name: { firstName: 'Ridho', lastName: 'Idris' },
-      }).success,
+      }).success
     ).toBe(true);
-    expect(
-      AppleSignInBody.safeParse({ id_token: 'abc', name: { firstName: 'R' } }).success,
-    ).toBe(true);
+    expect(AppleSignInBody.safeParse({ id_token: 'abc', name: { firstName: 'R' } }).success).toBe(
+      true
+    );
   });
 
   it('RefreshBody and LogoutBody require refresh_token', () => {
@@ -42,28 +42,28 @@ describe('auth schemas', () => {
         nickname: 'Ridho',
         income_range: 'r7to15',
         primary_goal: 'save',
-      }).success,
+      }).success
     ).toBe(true);
     expect(
       OnboardingBody.safeParse({
         nickname: '',
         income_range: 'r7to15',
         primary_goal: 'save',
-      }).success,
+      }).success
     ).toBe(false);
     expect(
       OnboardingBody.safeParse({
         nickname: 'x'.repeat(31),
         income_range: 'r7to15',
         primary_goal: 'save',
-      }).success,
+      }).success
     ).toBe(false);
     expect(
       OnboardingBody.safeParse({
         nickname: 'Ridho',
         income_range: 'bogus',
         primary_goal: 'save',
-      }).success,
+      }).success
     ).toBe(false);
   });
 
@@ -88,7 +88,7 @@ describe('auth schemas', () => {
           refresh_token: 'r'.repeat(64),
           user: userDto,
         },
-      }).success,
+      }).success
     ).toBe(true);
   });
 });

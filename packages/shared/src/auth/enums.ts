@@ -10,24 +10,10 @@ export type UserTier = z.infer<typeof UserTierSchema>;
  * IncomeRange uses `r3to7` etc. instead of `3to7` because Prisma enum
  * values cannot start with a digit. Mobile sends the `r`-prefixed form.
  */
-export const IncomeRangeSchema = z.enum([
-  'lt3',
-  'r3to7',
-  'r7to15',
-  'r15to30',
-  'gt30',
-  'variable',
-]);
+export const IncomeRangeSchema = z.enum(['lt3', 'r3to7', 'r7to15', 'r15to30', 'gt30', 'variable']);
 export type IncomeRange = z.infer<typeof IncomeRangeSchema>;
 
-export const PrimaryGoalSchema = z.enum([
-  'save',
-  'track',
-  'goal',
-  'invest',
-  'debt',
-  'bills',
-]);
+export const PrimaryGoalSchema = z.enum(['save', 'track', 'goal', 'invest', 'debt', 'bills']);
 export type PrimaryGoal = z.infer<typeof PrimaryGoalSchema>;
 
 export const incomeRangeLabel: Record<IncomeRange, string> = {
