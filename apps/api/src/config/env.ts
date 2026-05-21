@@ -1,11 +1,31 @@
 import { config as loadDotenv } from 'dotenv';
 import { z } from 'zod';
 
+const CommaList = z
+  .string()
+  .min(1)
+  .transform((s) =>
+    s
+      .split(',')
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0)
+  )
+  .refine((arr) => arr.length > 0, { message: 'must contain at least one value' });
+
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']),
   PORT: z.coerce.number().int().positive().default(3001),
   APP_PUBLIC_URL: z.string().url(),
   API_PUBLIC_URL: z.string().url(),
+
+  DATABASE_URL: z.string().url(),
+
+  JWT_ACCESS_SECRET: z.string().min(32, 'must be at least 32 chars'),
+  JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
+  JWT_REFRESH_TTL_SECONDS: z.coerce.number().int().positive().default(2592000),
+
+  GOOGLE_OAUTH_CLIENT_IDS: CommaList,
+  APPLE_OAUTH_CLIENT_IDS: CommaList,
 });
 
 export type Env = z.infer<typeof EnvSchema>;
