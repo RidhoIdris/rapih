@@ -181,7 +181,6 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['auth'],
         summary: 'Revoke a refresh token (idempotent)',
         body: LogoutBody,
-        response: { 204: { type: 'null' } },
       },
     },
     async (req, reply) => {
