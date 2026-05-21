@@ -31,6 +31,14 @@ export function registerErrorHandler(app: FastifyInstance, opts: Options): void 
       return;
     }
 
+    // Pass through errors that already have a specific HTTP status (e.g. rate-limit 429).
+    const statusCode = (error as { statusCode?: number }).statusCode;
+    if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 400) {
+      const msg = error instanceof Error ? error.message : 'Request rejected';
+      reply.status(statusCode).send(err('request.rejected', msg));
+      return;
+    }
+
     request.log.error({ err: error }, 'unhandled error');
     const rawMessage = error instanceof Error ? error.message : 'Unknown error';
     const message = opts.nodeEnv === 'production' ? 'Terjadi kesalahan pada server.' : rawMessage;

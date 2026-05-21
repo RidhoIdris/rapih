@@ -51,6 +51,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
         body: GoogleSignInBody,
         response: { 200: AuthSessionResponse },
       },
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
     },
     async (req) => {
       const claims = await verifyGoogleIdToken(req.body.id_token, {
@@ -93,6 +94,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
         body: AppleSignInBody,
         response: { 200: AuthSessionResponse },
       },
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
     },
     async (req) => {
       const claims = await verifyAppleIdToken(req.body.id_token, {
@@ -137,6 +139,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
         body: RefreshBody,
         response: { 200: RefreshResponse },
       },
+      config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
     },
     async (req) => {
       const result = await rotateRefreshToken(app.db, {

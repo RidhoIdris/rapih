@@ -1,4 +1,5 @@
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import sensible from '@fastify/sensible';
 import Fastify, { type FastifyInstance } from 'fastify';
 import {
@@ -38,6 +39,11 @@ export async function buildRawApp(): Promise<FastifyInstance> {
 
   await app.register(sensible);
   await app.register(cors, { origin: [env.APP_PUBLIC_URL], credentials: true });
+  await app.register(rateLimit, {
+    global: false,
+    max: 100,
+    timeWindow: '1 minute',
+  });
   await app.register(dbPlugin);
   await app.register(authDecorators);
   await registerSwagger(app);
