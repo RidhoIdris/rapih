@@ -83,6 +83,7 @@ model User {
   transactions             Transaction[]
   goals                    Goal[]
   recurring_transactions   RecurringTransaction[]
+  budgets                  Budget[]
 
   @@map("users")
 }
@@ -168,6 +169,7 @@ model Category {
   user                   User?                  @relation(fields: [user_id], references: [id], onDelete: Cascade)
   transactions           Transaction[]
   recurring_transactions RecurringTransaction[]
+  budget_categories      BudgetCategory[]
 
   @@index([user_id, deleted_at])
   @@map("categories")
@@ -248,4 +250,34 @@ model RecurringTransaction {
   @@index([wallet_id])
   @@index([next_due_date])
   @@map("recurring_transactions")
+}
+
+model Budget {
+  id         String   @id @default(cuid())
+  user_id    String
+  name       String
+  icon       String
+  color      String
+  amount     BigInt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+
+  user              User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  budget_categories BudgetCategory[]
+
+  @@index([user_id, deleted_at])
+  @@map("budgets")
+}
+
+model BudgetCategory {
+  budget_id   String
+  category_id String
+
+  budget   Budget   @relation(fields: [budget_id], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@id([budget_id, category_id])
+  @@index([category_id])
+  @@map("budget_categories")
 }

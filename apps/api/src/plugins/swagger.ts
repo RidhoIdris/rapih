@@ -18,6 +18,10 @@ export async function registerSwagger(app: FastifyInstance): Promise<void> {
       },
       servers: [{ url: env.API_PUBLIC_URL }],
       tags: [
+        {
+          name: 'budgets',
+          description: 'Envelope budget CRUD (monthly, multi-category, live spent).',
+        },
         { name: 'meta', description: 'Service health and metadata.' },
         { name: 'auth', description: 'Authentication endpoints (Google + Apple sign-in).' },
         { name: 'me', description: 'Current-user endpoints (profile, onboarding).' },

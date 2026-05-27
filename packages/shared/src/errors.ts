@@ -10,6 +10,7 @@ export const ERROR_MESSAGES = {
   'auth.unauthorized': 'Anda harus masuk dulu.',
   'auth.unsupported_provider': 'Provider tidak dikenali.',
   'onboarding.required': 'Lengkapi onboarding dulu untuk lanjut.',
+  'budget.not_found': 'Budget tidak ditemukan.',
   'category.not_found': 'Kategori tidak ditemukan.',
   'goal.not_found': 'Goal tidak ditemukan.',
   'recurring.not_found': 'Tagihan rutin tidak ditemukan.',

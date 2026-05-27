@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { authRoutes } from './auth.js';
+import { budgetsRoutes } from './budgets.js';
 import { categoriesRoutes } from './categories.js';
 import { goalsRoutes } from './goals.js';
 import { healthRoutes } from './health.js';
@@ -17,4 +18,5 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await app.register(transactionsRoutes);
   await app.register(goalsRoutes);
   await app.register(recurringRoutes);
+  await app.register(budgetsRoutes);
 }
