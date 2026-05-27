@@ -50,6 +50,12 @@ enum CategoryKind {
   income
 }
 
+enum TransactionKind {
+  expense
+  income
+  transfer
+}
+
 model User {
   id                       String    @id @default(cuid())
   email                    String    @unique
@@ -67,6 +73,7 @@ model User {
   profile                  UserProfile?
   wallets                  Wallet[]
   categories               Category[]
+  transactions             Transaction[]
 
   @@map("users")
 }
@@ -128,7 +135,9 @@ model Wallet {
   updated_at      DateTime   @updatedAt
   deleted_at      DateTime?
 
-  user            User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user                User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions        Transaction[] @relation("TransactionWallet")
+  transfers_received  Transaction[] @relation("TransactionToWallet")
 
   @@index([user_id, deleted_at])
   @@map("wallets")
@@ -145,8 +154,36 @@ model Category {
   updated_at DateTime     @updatedAt
   deleted_at DateTime?
 
-  user       User?        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions Transaction[]
 
   @@index([user_id, deleted_at])
   @@map("categories")
+}
+
+model Transaction {
+  id            String          @id @default(cuid())
+  user_id       String
+  kind          TransactionKind
+  wallet_id     String
+  to_wallet_id  String?
+  category_id   String?
+  amount        BigInt
+  note          String?
+  transacted_at DateTime
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  deleted_at    DateTime?
+
+  user          User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  wallet        Wallet          @relation("TransactionWallet", fields: [wallet_id], references: [id])
+  to_wallet     Wallet?         @relation("TransactionToWallet", fields: [to_wallet_id], references: [id])
+  category      Category?       @relation(fields: [category_id], references: [id])
+
+  @@index([user_id, deleted_at])
+  @@index([wallet_id])
+  @@index([to_wallet_id])
+  @@index([category_id])
+  @@index([transacted_at])
+  @@map("transactions")
 }

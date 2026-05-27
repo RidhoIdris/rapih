@@ -11,6 +11,7 @@ export const ERROR_MESSAGES = {
   'auth.unsupported_provider': 'Provider tidak dikenali.',
   'onboarding.required': 'Lengkapi onboarding dulu untuk lanjut.',
   'category.not_found': 'Kategori tidak ditemukan.',
+  'transaction.not_found': 'Transaksi tidak ditemukan.',
   'wallet.not_found': 'Dompet tidak ditemukan.',
   'validation.failed': 'Validasi gagal.',
   'internal.unknown': 'Terjadi kesalahan pada server.',

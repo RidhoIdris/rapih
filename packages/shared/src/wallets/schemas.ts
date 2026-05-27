@@ -42,7 +42,6 @@ export const WalletDto = z.object({
   provider_name: z.string(),
   label: z.string().nullable(),
   initial_balance: z.string(),
-  /** Currently equal to initial_balance; will become initial_balance + sum(transactions) once tx chunk lands. */
   balance: z.string(),
   created_at: z.string(),
   updated_at: z.string(),

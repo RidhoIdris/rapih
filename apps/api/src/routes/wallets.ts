@@ -4,6 +4,7 @@ import {
   WalletListResponse,
   WalletResponse,
 } from '@rapih/shared';
+import type { FastifyInstance } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { ok } from '../lib/envelope.js';
@@ -11,6 +12,34 @@ import { AppError } from '../lib/errors.js';
 import { walletToDto } from '../lib/wallet-dto.js';
 
 const ParamsId = z.object({ id: z.string().min(1) });
+
+async function computeBalance(
+  app: FastifyInstance,
+  walletId: string,
+  initialBalance: bigint
+): Promise<bigint> {
+  const [credits, debits] = await Promise.all([
+    app.db.transaction.aggregate({
+      where: {
+        deleted_at: null,
+        OR: [
+          { wallet_id: walletId, kind: 'income' },
+          { to_wallet_id: walletId, kind: 'transfer' },
+        ],
+      },
+      _sum: { amount: true },
+    }),
+    app.db.transaction.aggregate({
+      where: {
+        wallet_id: walletId,
+        deleted_at: null,
+        kind: { in: ['expense', 'transfer'] },
+      },
+      _sum: { amount: true },
+    }),
+  ]);
+  return initialBalance + (credits._sum.amount ?? 0n) - (debits._sum.amount ?? 0n);
+}
 
 export const walletsRoutes: FastifyPluginAsyncZod = async (app) => {
   // ─── List wallets ──────────────────────────────────────────────────────
@@ -29,7 +58,10 @@ export const walletsRoutes: FastifyPluginAsyncZod = async (app) => {
         where: { user_id: req.user.id, deleted_at: null },
         orderBy: { created_at: 'asc' },
       });
-      return ok({ wallets: wallets.map(walletToDto) });
+      const dtos = await Promise.all(
+        wallets.map(async (w) => walletToDto(w, await computeBalance(app, w.id, w.initial_balance)))
+      );
+      return ok({ wallets: dtos });
     }
   );
 
@@ -56,7 +88,7 @@ export const walletsRoutes: FastifyPluginAsyncZod = async (app) => {
           initial_balance: BigInt(body.initial_balance),
         },
       });
-      return ok({ wallet: walletToDto(wallet) });
+      return ok({ wallet: walletToDto(wallet, wallet.initial_balance) });
     }
   );
 
@@ -79,7 +111,8 @@ export const walletsRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!wallet) {
         throw new AppError('wallet.not_found', 'Dompet tidak ditemukan.', 404);
       }
-      return ok({ wallet: walletToDto(wallet) });
+      const balance = await computeBalance(app, wallet.id, wallet.initial_balance);
+      return ok({ wallet: walletToDto(wallet, balance) });
     }
   );
 
@@ -114,7 +147,8 @@ export const walletsRoutes: FastifyPluginAsyncZod = async (app) => {
             body.initial_balance !== undefined ? BigInt(body.initial_balance) : undefined,
         },
       });
-      return ok({ wallet: walletToDto(updated) });
+      const balance = await computeBalance(app, updated.id, updated.initial_balance);
+      return ok({ wallet: walletToDto(updated, balance) });
     }
   );
 
