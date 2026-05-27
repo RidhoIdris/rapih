@@ -70,6 +70,7 @@ packages/
 - **Soft delete:** only on user-data tables (transactions, wallets, goals, etc.). Column `deleted_at: DateTime?`. Reference data (categories) is hard-deleted.
 - **Multi-tenant scoping:** every user-data table has `user_id` indexed. Every query in API MUST scope by `user_id` from the JWT. Never trust client-provided `user_id`. There is a Prisma middleware `withUserScope` that enforces this — use it.
 - **Money:** stored as `BigInt` cents (IDR has no cents but we keep `BigInt` for safety/flexibility). Never use `Float`. Helper `formatRupiah()` in `packages/shared/money.ts`.
+- **BigInt over the wire:** API serializes `BigInt` as a numeric **string** in JSON (e.g. `"8420000"`, including negative for liabilities). Mobile/web parse with `BigInt(s)` or, for display-only sums where overflow is impossible, `Number(s)`. Never bare-emit BigInt — JSON.stringify throws on it.
 - **Migrations:** `prisma migrate dev` locally, `prisma migrate deploy` in CI/runtime startup. Migrations committed to repo.
 
 ## 5. Auth Model
@@ -118,6 +119,94 @@ GET  /auth/me                        (bearer)            → user (full profile)
 
 - Argon2id, default params (`memoryCost: 19456, timeCost: 2, parallelism: 1`).
 - Minimum 8 chars. No max. No complex rules (modern guidance: length > complexity).
+
+## 5A. Domain CRUD Pattern (locked)
+
+Every user-data resource (wallets, transactions, categories, goals, budgets, assets, …) follows this exact pattern. **Do not deviate without updating this section first.**
+
+### Schema (Prisma)
+
+```prisma
+model {Resource} {
+  id           String    @id @default(cuid())
+  user_id      String
+  // ...resource-specific fields
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  deleted_at   DateTime?
+
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, deleted_at])
+  @@map("{resources}")
+}
+```
+
+- `id` = cuid string · `user_id` indexed · `deleted_at` for soft-delete · `(user_id, deleted_at)` composite index for the common "list non-deleted by user" query.
+- Reference data (e.g. system categories) is hard-deleted; only user-owned data is soft-deleted.
+- All money fields are `BigInt` (cents).
+
+### Shared types (`packages/shared/src/{resource}/`)
+
+- `enums.ts` — zod enum + label map (Bahasa Indonesia for display).
+- `schemas.ts` — `Create{Resource}Body`, `Update{Resource}Body` (all fields optional + `.refine` non-empty), `{Resource}Dto`, `{Resource}Response`, `{Resource}ListResponse`.
+- `index.ts` — barrel `export * from './enums.js'; export * from './schemas.js';`
+- Add `export * from './{resource}/index.js'` to `packages/shared/src/index.ts`.
+
+### Endpoints (locked)
+
+```
+GET    /{resources}            → { wallets: [...] } / { transactions: [...] } / etc.
+POST   /{resources}            → { {resource}: ... }
+GET    /{resources}/:id        → { {resource}: ... } (404 if not found / not owned / deleted)
+PATCH  /{resources}/:id        → { {resource}: ... } (405 if empty body)
+DELETE /{resources}/:id        → 204 (soft-delete; 404 if not found / already deleted)
+```
+
+- **Always** wrap with `onRequest: [app.authenticate, app.requireOnboarding]`.
+- **Always** scope every query by `user_id` from `req.user.id` and filter `deleted_at: null` for list/get/update/delete.
+- Cross-user access returns 404 (not 403) — don't leak existence.
+- Money fields in `Create*Body` are typed as numeric **string** (validated by `MoneyString` zod helper); convert to `BigInt(...)` before passing to Prisma.
+- Money fields in DTO are emitted as numeric string (`bigint.toString()`).
+
+### Errors
+
+- `{resource}.not_found` → 404
+- `validation.failed` → 400 (auto from zod)
+- `auth.unauthorized` / `onboarding.required` → 401 / 403 (auto from decorators)
+
+### Files to create per resource
+
+```
+packages/shared/src/{resource}/{enums,schemas,index}.ts   ← shared types
+apps/api/src/lib/{resource}-dto.ts                        ← Prisma row → DTO mapper
+apps/api/src/routes/{resources}.ts                        ← FastifyPluginAsyncZod
+apps/api/tests/{resources}.test.ts                        ← integration tests
+```
+
+Register the plugin in `apps/api/src/routes/index.ts`. Add the tag in `apps/api/src/plugins/swagger.ts`.
+
+### Mobile companion (per resource)
+
+```
+apps/mobile/src/features/{resource}/api.ts               ← apiRequest wrappers
+apps/mobile/src/features/{resource}/{resource}-store.ts  ← Zustand: status/list/CRUD methods
+```
+
+- Display-only data (brand colors, icons, suggestion lists) goes in the mobile feature folder, not the backend.
+- Router params: use querystring (`/(app)/foo?id=${id}`), not the object form — typed-routes choke on `params` object.
+
+### Tests required (minimum)
+
+- 401 without bearer
+- 403 if onboarding not complete
+- empty list for new user
+- create happy + create validation reject
+- get happy + cross-user 404
+- update happy + empty-body 400
+- soft-delete + list omits + double-delete 404
+
+See `apps/api/tests/wallets.test.ts` as the canonical reference.
 
 ## 6. Tier Gating
 
@@ -283,7 +372,7 @@ Sub-project owner: which sub-project spec will design & implement this. See § 1
 | admin tier override | cms-basics | — | api-foundation | todo |
 | admin category CRUD | cms-basics | — | api-foundation | todo |
 | categories (system + user) | domain-crud | Free | api-foundation | todo |
-| wallets (dompet) CRUD | domain-crud | Free | api-foundation | todo |
+| wallets (dompet) CRUD | domain-crud | Free | api-foundation | done |
 | transactions CRUD | domain-crud | Free | wallets, categories | todo |
 | recurring (rutin) CRUD | domain-crud | Free | transactions | todo |
 | budgets (envelope) CRUD | domain-crud | Free | categories | todo |
@@ -318,6 +407,8 @@ Each gets its own design spec in `docs/superpowers/specs/`, then its own plan in
 8. **privacy** (planned, deferred) — privacy hardening per § 17. Triggered by user count / market demand, not v1.
 
 ## 16. How to Add a Small Feature (Recipe)
+
+> **For new domain CRUD resources** (categories, transactions, goals, budgets, assets, …) — follow the cookbook at `docs/superpowers/patterns/domain-crud.md`. It's mechanical: copy the wallet feature, search-and-replace, adjust schema. The pattern is locked in Spine § 5A.
 
 Given a feature like *"add `attachment_url` to transactions"* or *"add goal milestones"*:
 

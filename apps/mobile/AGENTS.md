@@ -8,23 +8,11 @@ https://docs.expo.dev/versions/v55.0.0/ before writing any native/config code.
 
 ## What this app is
 
-Rapih is an AI personal-finance app for Indonesian Gen-Z (Bahasa Indonesia UI,
-IDR). This codebase is a **UI-only** build — there is NO backend, NO API, NO
-auth. Screens are pixel-faithful recreations of an approved HTML/CSS design
-(white base + pastel mint). The source design lives in the Claude Design
-handoff; the visual system is fully captured in `src/theme`.
+Rapih is an AI personal-finance app for Indonesian Gen-Z (Bahasa Indonesia UI, IDR). The app runs against a real backend (`apps/api`) — Google sign-in works end-to-end, and domain CRUD (wallets, …) is wired feature-by-feature.
 
-Currently implemented: the **auth flow** (splash, login, 3-step register,
-done), **Beranda**, **Tanya** (AI chat), **Dompet** (list/detail/add), the
-**Aktivitas / Scan Struk / Rutin** section (transaksi list/detail/add,
-scan-struk camera + review, recurring list/detail/add + tandai-bayar
-sheet), the **Profil** section (saya, pengaturan, notifikasi), and the
-**Budget / Goal** hub (envelope buckets + goals list/detail/add).
-Everything else (asset, weekly-review) is yet to be built on this
-foundation. Source designs live in the handoff `screens/*.jsx`
-(Tanya = `copilot.jsx`, Dompet = `wallet.jsx` + `addDompet.jsx`).
-Bank/e-wallet **brand colors are data** (kept in screen-local arrays), not
-`@/theme` tokens — they're external brand identity, not the design system.
+Currently implemented end-to-end (UI + API): **auth flow** (Google sign-in via `@react-native-google-signin`, JWT + refresh, onboarding with `PATCH /me/onboarding`), **wallets / dompet** (CRUD via `/wallets`).
+
+Other features still UI-only against dummy data: Beranda, Tanya, Aktivitas / Scan Struk / Rutin, Budget / Goal, Profil.
 
 ## Stack (decided — do not swap without reason)
 
@@ -209,3 +197,56 @@ Tabs: Beranda · Budget · ⟨Tanya⟩ · Transaksi · Saya.
 3. Register it in the relevant `_layout.tsx` `<Stack>` if it needs specific
    options (background, gestures).
 4. `tsc` + `eslint`, then `npx expo start` to smoke-test in Expo Go.
+
+## Wiring a feature to the API (domain CRUD pattern)
+
+The canonical reference is **wallet** (`src/features/wallet/`). When wiring a new domain (categories, transactions, goals, budgets, …), follow that pattern exactly:
+
+```
+src/features/{resource}/
+  api.ts                  apiRequest wrappers (list/get/create/update/delete) returning DTO types from @rapih/shared
+  {resource}-store.ts     Zustand: { status, error, items, fetch(), create(), update(), remove() }
+  brands.ts (optional)    display-only data: brand colors, suggestion lists — NOT stored on the backend
+  screens/*.tsx           screen compositions; route files in src/app re-export these
+```
+
+### API client
+
+- `apiRequest<T>(path, opts)` from `@/lib/api` handles bearer + auto-refresh on 401. Don't `fetch()` directly.
+- Type the response with the DTO from `@rapih/shared` (e.g. `WalletDto`, `WalletListResponse['data']`).
+- For 204 responses (DELETE), the wrapper returns `undefined as T`.
+
+### Money
+
+- Money is sent as a numeric **string** in JSON (`"8420000"`, including negative for liabilities).
+- For sums and display, parse with `Number(s)` — wallets/transactions won't realistically exceed `Number.MAX_SAFE_INTEGER` cents.
+- Use `rupiah(cents, { short })` from `@/lib/money` for display.
+
+### Auth
+
+- Bootstrap on splash (`src/features/auth/bootstrap.ts`) reads refresh from SecureStore → `/auth/refresh` → `/auth/me` → routes based on `onboarding_completed_at`.
+- All non-auth endpoints require completed onboarding (backend enforces 403 `onboarding.required`). Don't call them on the splash/login screens.
+- Google sign-in: `googleSignIn()` from `src/features/auth/google-signin.ts` returns `{kind: 'success', idToken}` or one of the failure states; pass `idToken` to `signInWithGoogle()`.
+
+### Routing & params
+
+- Expo Router v5 typed-routes choke on the `{ pathname, params }` object form. Use querystring strings instead:
+
+  ```ts
+  // ✅ works
+  router.push(`/(app)/dompet-detail?id=${encodeURIComponent(id)}` as Href);
+
+  // ❌ TS errors
+  router.push({ pathname: '/(app)/dompet-detail', params: { id } });
+  ```
+
+- Read params with `useLocalSearchParams<{ id?: string }>()`.
+
+### Env
+
+- Add new public-safe vars under `apps/mobile/.env` with `EXPO_PUBLIC_` prefix and validate them in `src/lib/env.ts`. The `required(name)` helper throws at module-load if missing.
+
+### Empty states + pull-to-refresh
+
+- Wrap list screens in a `<ScrollView refreshControl={<RefreshControl ... />}>` so users can re-fetch.
+- Empty state copy in Bahasa Indonesia, friendly tone (mirror dompet-screen).
