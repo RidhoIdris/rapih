@@ -20,7 +20,7 @@ const authDecorators: FastifyPluginAsync = async (app: FastifyInstance) => {
 
   const authenticate = async (req: FastifyRequest, _reply: FastifyReply) => {
     const header = req.headers.authorization;
-    if (!header || !header.startsWith('Bearer ')) {
+    if (!header?.startsWith('Bearer ')) {
       throw new AppError('auth.unauthorized', 'Anda harus masuk dulu.', 401);
     }
     const token = header.slice('Bearer '.length).trim();

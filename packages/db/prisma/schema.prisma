@@ -74,6 +74,7 @@ model User {
   wallets                  Wallet[]
   categories               Category[]
   transactions             Transaction[]
+  goals                    Goal[]
 
   @@map("users")
 }
@@ -135,9 +136,10 @@ model Wallet {
   updated_at      DateTime   @updatedAt
   deleted_at      DateTime?
 
-  user                User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user                User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
   transactions        Transaction[] @relation("TransactionWallet")
   transfers_received  Transaction[] @relation("TransactionToWallet")
+  goals               Goal[]
 
   @@index([user_id, deleted_at])
   @@map("wallets")
@@ -186,4 +188,26 @@ model Transaction {
   @@index([category_id])
   @@index([transacted_at])
   @@map("transactions")
+}
+
+model Goal {
+  id            String    @id @default(cuid())
+  user_id       String
+  name          String
+  icon          String
+  color         String
+  target_amount BigInt
+  saved_amount  BigInt    @default(0)
+  deadline      DateTime?
+  wallet_id     String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  wallet        Wallet?   @relation(fields: [wallet_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, deleted_at])
+  @@index([wallet_id])
+  @@map("goals")
 }
