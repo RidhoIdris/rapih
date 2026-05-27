@@ -19,8 +19,9 @@ export async function registerSwagger(app: FastifyInstance): Promise<void> {
       servers: [{ url: env.API_PUBLIC_URL }],
       tags: [
         { name: 'meta', description: 'Service health and metadata.' },
-        { name: 'auth', description: 'Authentication endpoints (added in api-auth-email chunk).' },
-        { name: 'me', description: 'Current-user endpoints (added in api-auth-email chunk).' },
+        { name: 'auth', description: 'Authentication endpoints (Google + Apple sign-in).' },
+        { name: 'me', description: 'Current-user endpoints (profile, onboarding).' },
+        { name: 'wallets', description: 'Wallet (dompet) CRUD.' },
       ],
     },
     transform: jsonSchemaTransform,

@@ -10,6 +10,7 @@ export const ERROR_MESSAGES = {
   'auth.unauthorized': 'Anda harus masuk dulu.',
   'auth.unsupported_provider': 'Provider tidak dikenali.',
   'onboarding.required': 'Lengkapi onboarding dulu untuk lanjut.',
+  'wallet.not_found': 'Dompet tidak ditemukan.',
   'validation.failed': 'Validasi gagal.',
   'internal.unknown': 'Terjadi kesalahan pada server.',
 } as const;

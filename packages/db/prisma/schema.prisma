@@ -37,6 +37,14 @@ enum PrimaryGoal {
   bills
 }
 
+enum WalletKind {
+  bank
+  ewallet
+  cash
+  investment
+  other
+}
+
 model User {
   id                       String    @id @default(cuid())
   email                    String    @unique
@@ -52,6 +60,7 @@ model User {
   social_accounts          SocialAccount[]
   refresh_tokens           RefreshToken[]
   profile                  UserProfile?
+  wallets                  Wallet[]
 
   @@map("users")
 }
@@ -100,4 +109,21 @@ model UserProfile {
   user           User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
+}
+
+model Wallet {
+  id              String     @id @default(cuid())
+  user_id         String
+  kind            WalletKind
+  provider_name   String
+  label           String?
+  initial_balance BigInt     @default(0)
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+  deleted_at      DateTime?
+
+  user            User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, deleted_at])
+  @@map("wallets")
 }
