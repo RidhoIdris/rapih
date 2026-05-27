@@ -23,6 +23,7 @@ export async function registerSwagger(app: FastifyInstance): Promise<void> {
         { name: 'me', description: 'Current-user endpoints (profile, onboarding).' },
         { name: 'categories', description: 'Category CRUD (system + user-custom).' },
         { name: 'goals', description: 'Goal (tabungan tujuan) CRUD.' },
+        { name: 'recurring', description: 'Recurring transaction (tagihan rutin) CRUD + pay.' },
         { name: 'transactions', description: 'Transaction CRUD (expense, income, transfer).' },
         { name: 'wallets', description: 'Wallet (dompet) CRUD.' },
       ],

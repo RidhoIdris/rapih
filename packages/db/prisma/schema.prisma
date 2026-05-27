@@ -56,6 +56,13 @@ enum TransactionKind {
   transfer
 }
 
+enum RecurringPeriod {
+  daily
+  weekly
+  monthly
+  yearly
+}
+
 model User {
   id                       String    @id @default(cuid())
   email                    String    @unique
@@ -75,6 +82,7 @@ model User {
   categories               Category[]
   transactions             Transaction[]
   goals                    Goal[]
+  recurring_transactions   RecurringTransaction[]
 
   @@map("users")
 }
@@ -140,6 +148,7 @@ model Wallet {
   transactions        Transaction[] @relation("TransactionWallet")
   transfers_received  Transaction[] @relation("TransactionToWallet")
   goals               Goal[]
+  recurring_transactions RecurringTransaction[]
 
   @@index([user_id, deleted_at])
   @@map("wallets")
@@ -156,8 +165,9 @@ model Category {
   updated_at DateTime     @updatedAt
   deleted_at DateTime?
 
-  user         User?         @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  user                   User?                  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions           Transaction[]
+  recurring_transactions RecurringTransaction[]
 
   @@index([user_id, deleted_at])
   @@map("categories")
@@ -210,4 +220,32 @@ model Goal {
   @@index([user_id, deleted_at])
   @@index([wallet_id])
   @@map("goals")
+}
+
+model RecurringTransaction {
+  id            String          @id @default(cuid())
+  user_id       String
+  wallet_id     String
+  category_id   String?
+  kind          TransactionKind
+  amount        BigInt
+  note          String?
+  name          String
+  icon          String
+  color         String
+  period        RecurringPeriod
+  next_due_date DateTime
+  last_paid_at  DateTime?
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  deleted_at    DateTime?
+
+  user     User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  wallet   Wallet    @relation(fields: [wallet_id], references: [id], onDelete: Restrict)
+  category Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, deleted_at])
+  @@index([wallet_id])
+  @@index([next_due_date])
+  @@map("recurring_transactions")
 }

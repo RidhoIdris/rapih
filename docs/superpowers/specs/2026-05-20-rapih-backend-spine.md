@@ -374,7 +374,7 @@ Sub-project owner: which sub-project spec will design & implement this. See § 1
 | categories (system + user) | domain-crud | Free | api-foundation | done |
 | wallets (dompet) CRUD | domain-crud | Free | api-foundation | done |
 | transactions CRUD | domain-crud | Free | wallets, categories | done |
-| recurring (rutin) CRUD | domain-crud | Free | transactions | todo |
+| recurring (rutin) CRUD | domain-crud | Free | transactions | done |
 | budgets (envelope) CRUD | domain-crud | Free | categories | todo |
 | goals CRUD | domain-crud | Free | wallets | done |
 | assets CRUD | domain-crud | Plus | — | todo |

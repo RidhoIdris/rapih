@@ -4,6 +4,7 @@ import { categoriesRoutes } from './categories.js';
 import { goalsRoutes } from './goals.js';
 import { healthRoutes } from './health.js';
 import { meRoutes } from './me.js';
+import { recurringRoutes } from './recurring.js';
 import { transactionsRoutes } from './transactions.js';
 import { walletsRoutes } from './wallets.js';
 
@@ -15,4 +16,5 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await app.register(categoriesRoutes);
   await app.register(transactionsRoutes);
   await app.register(goalsRoutes);
+  await app.register(recurringRoutes);
 }
