@@ -1,0 +1,27 @@
+# Local-dev infra for Rapih. Not used in Dokploy (Postgres + Redis are
+# managed services there). This file is for `pnpm --filter @rapih/api dev`
+# and `pnpm --filter @rapih/api test` against a local Postgres.
+
+name: rapih-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: rapih-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rapih
+      POSTGRES_PASSWORD: rapih
+      POSTGRES_DB: rapih
+    ports:
+      - '5433:5432'
+    volumes:
+      - rapih_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U rapih -d rapih']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  rapih_pg_data:

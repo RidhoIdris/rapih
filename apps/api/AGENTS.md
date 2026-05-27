@@ -2,7 +2,7 @@
 
 ## What this app is
 
-`apps/api` is the Rapih backend HTTP service: **Fastify v5 + TypeScript strict** on Node 22. It is the source of truth for user-facing endpoints consumed by the mobile app (Expo) and the admin CMS (Next.js). v1 scope: no database, no auth (those land in the next chunk, `api-auth-email`).
+`apps/api` is the Rapih backend HTTP service: **Fastify v5 + TypeScript strict** on Node 22. It is the source of truth for user-facing endpoints consumed by the mobile app (Expo) and the admin CMS (Next.js). v1 auth: social-only (Google + Apple sign-in), JWT access + rotating refresh tokens, onboarding flow.
 
 Anything cross-cutting (stack picks, monorepo layout, auth model, env naming, deploy story) lives in `docs/superpowers/specs/2026-05-20-rapih-backend-spine.md`. Read the Spine before editing this app.
 
@@ -59,6 +59,24 @@ apps/api/
 - Errors: throw `AppError` with a dotted snake_case code (e.g. `auth.invalid_credentials`) and a Bahasa Indonesia user-facing message.
 - Money: when this app gains money-handling endpoints, use `BigInt` cents per Spine § 4. Never `Float`.
 - Tier gating: an `assertTier(req, 'plus')` helper will be added in the auth chunk — do not roll your own.
+
+## Auth conventions
+
+This API uses **social-only sign-in** (Google + Apple). Email/password is intentionally not implemented. See `docs/superpowers/specs/2026-05-21-api-auth-social.md`.
+
+- **Tokens:** access JWT (HS256, 15 min, secret `JWT_ACCESS_SECRET`) + opaque refresh token (32-byte hex, sha256 hashed at rest, 30-day TTL, rotated on every `/auth/refresh`). Reuse of a revoked refresh token revokes every refresh token for that user.
+- **Verifying provider ID tokens:** done via `jose` `createRemoteJWKSet` against Google + Apple JWKS, cached in process for 10 min. Tests inject mock JWKS via `setTestJwksOverrides()` from `src/auth/test-overrides.ts` — never call this from production code.
+- **Protect a route:** add `onRequest: [app.authenticate]` to the route options. The user is hydrated to `req.user` (full Prisma `User` row).
+- **Require completed onboarding:** add `onRequest: [app.authenticate, app.requireOnboarding]`. Order matters — authenticate first.
+- **Return user payloads** through `userToDto(user)` from `src/lib/dto.ts`. Never expose raw Prisma rows.
+- **Add a new social provider** (future): copy the pattern in `src/auth/verify-id-token.ts` (pin issuer, audiences, JWKS URL, optional email-verified check), add a route in `src/routes/auth.ts`, add an enum value to `packages/db/prisma/schema.prisma` + `packages/shared/src/auth/enums.ts`, ship a migration, write tests with `createMockJwks`.
+
+## Database conventions for this app
+
+- Prisma client is decorated as `app.db` via `src/plugins/db.ts`. Never instantiate `new PrismaClient()` in route code — always use `app.db`.
+- Schema lives in `packages/db/prisma/schema.prisma`. Migrations: `pnpm --filter @rapih/db exec prisma migrate dev --name <slug>` locally, `prisma migrate deploy` at runtime via the Dockerfile entrypoint.
+- Test DB harness: `tests/helpers/test-db.ts` + `tests/helpers/test-env.ts` + `vitest.config.ts` `globalSetup`. Tests serialize against the same DB; `resetTestDb()` truncates user-data tables in `beforeEach`.
+- For tests that need to add routes before `ready()`, use `buildRawApp()` instead of `buildApp()`, register your routes, then call `await app.ready()`.
 
 ## Adding deps
 

@@ -1,0 +1,103 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SocialProvider {
+  google
+  apple
+}
+
+enum UserTier {
+  free
+  plus
+  pro
+}
+
+enum IncomeRange {
+  lt3
+  r3to7
+  r7to15
+  r15to30
+  gt30
+  variable
+}
+
+enum PrimaryGoal {
+  save
+  track
+  goal
+  invest
+  debt
+  bills
+}
+
+model User {
+  id                       String    @id @default(cuid())
+  email                    String    @unique
+  email_verified_at        DateTime?
+  name                     String
+  tier                     UserTier  @default(free)
+  apple_private_relay      Boolean   @default(false)
+  onboarding_completed_at  DateTime?
+
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  social_accounts          SocialAccount[]
+  refresh_tokens           RefreshToken[]
+  profile                  UserProfile?
+
+  @@map("users")
+}
+
+model SocialAccount {
+  id                String         @id @default(cuid())
+  user_id           String
+  provider          SocialProvider
+  provider_user_id  String
+  created_at        DateTime       @default(now())
+
+  user              User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([provider, provider_user_id])
+  @@index([user_id])
+  @@map("social_accounts")
+}
+
+model RefreshToken {
+  id              String    @id @default(cuid())
+  user_id         String
+  token_hash      String    @unique
+  expires_at      DateTime
+  revoked_at      DateTime?
+  replaced_by_id  String?   @unique
+  device_label    String?
+  created_at      DateTime  @default(now())
+
+  user            User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  replaced_by     RefreshToken? @relation("TokenRotation", fields: [replaced_by_id], references: [id])
+  replaces        RefreshToken? @relation("TokenRotation")
+
+  @@index([user_id])
+  @@index([expires_at])
+  @@map("refresh_tokens")
+}
+
+model UserProfile {
+  user_id        String       @id
+  nickname       String?
+  income_range   IncomeRange?
+  primary_goal   PrimaryGoal?
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
+
+  user           User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}

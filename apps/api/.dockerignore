@@ -8,3 +8,4 @@ dist
 .vscode
 .DS_Store
 tests
+# scripts/ MUST NOT be ignored — entrypoint.sh ships in the image

@@ -105,6 +105,8 @@ POST /auth/apple                     apple_id_token,     → {access, refresh, u
 GET  /auth/me                        (bearer)            → user (full profile)
 ```
 
+**v1 (current):** social endpoints (`/auth/google`, `/auth/apple`), token lifecycle (`/auth/refresh`, `/auth/logout`), `/auth/me`, and `PATCH /me/onboarding`. Email/password endpoints are deferred — see `docs/superpowers/specs/2026-05-21-api-auth-social.md`.
+
 ### 5.4 Email verification policy
 
 - Email/password signup → email NOT verified. User can use app, but features that send email (e.g. password reset, future shared workspaces) check `email_verified_at`.
@@ -269,12 +271,12 @@ Sub-project owner: which sub-project spec will design & implement this. See § 1
 
 | Feature | Owner | Tier | Deps | Status |
 |---|---|---|---|---|
-| email signup + login | api-foundation | Free | — | todo |
-| jwt access + refresh | api-foundation | Free | — | todo |
-| email verification | api-foundation | Free | resend | todo |
-| forgot / reset password | api-foundation | Free | resend | todo |
-| google sign-in | api-foundation | Free | — | todo |
-| apple sign-in | api-foundation | Free | — | todo |
+| email signup + login | api-foundation | Free | — | deferred (v1 social-only) |
+| jwt access + refresh | api-foundation | Free | — | done |
+| email verification | api-foundation | Free | resend | deferred (v1 social-only) |
+| forgot / reset password | api-foundation | Free | resend | deferred (v1 social-only) |
+| google sign-in | api-foundation | Free | — | done |
+| apple sign-in | api-foundation | Free | — | done |
 | device token register | api-foundation | Free | — | todo |
 | admin login (env) | cms-basics | — | api-foundation | todo |
 | admin user list / detail | cms-basics | — | api-foundation | todo |
