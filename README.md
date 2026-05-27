@@ -69,6 +69,8 @@ pnpm dev:ios
 
 This builds + installs Rapih on the booted iPhone Simulator and connects it to Metro. Subsequent JS changes hot-reload automatically — no rebuild needed unless you change native code (plugins, Podfile, Info.plist, etc).
 
+> **Tip:** all `pnpm dev*` scripts are defined at the **repo root**. Run them from `/Volumes/Work/fiverr/rapih` (or any subfolder using `pnpm -w run <script>`). Running `pnpm dev:ios` from a random subfolder without `-w` will fail with `[ERR_PNPM_NO_SCRIPT]`.
+
 ## Common scripts
 
 ```bash
