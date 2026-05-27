@@ -12,6 +12,7 @@ export const ERROR_MESSAGES = {
   'onboarding.required': 'Lengkapi onboarding dulu untuk lanjut.',
   'budget.not_found': 'Budget tidak ditemukan.',
   'category.not_found': 'Kategori tidak ditemukan.',
+  'device.not_found': 'Perangkat tidak ditemukan.',
   'goal.not_found': 'Goal tidak ditemukan.',
   'receipt.not_found': 'Struk tidak ditemukan.',
   'recurring.not_found': 'Tagihan rutin tidak ditemukan.',

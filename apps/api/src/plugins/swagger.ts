@@ -26,6 +26,7 @@ export async function registerSwagger(app: FastifyInstance): Promise<void> {
         { name: 'auth', description: 'Authentication endpoints (Google + Apple sign-in).' },
         { name: 'me', description: 'Current-user endpoints (profile, onboarding).' },
         { name: 'categories', description: 'Category CRUD (system + user-custom).' },
+        { name: 'devices', description: 'Push notification device token registration.' },
         { name: 'goals', description: 'Goal (tabungan tujuan) CRUD.' },
         {
           name: 'receipts',

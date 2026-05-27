@@ -63,6 +63,11 @@ enum RecurringPeriod {
   yearly
 }
 
+enum DevicePlatform {
+  ios
+  android
+}
+
 model User {
   id                       String    @id @default(cuid())
   email                    String    @unique
@@ -85,6 +90,7 @@ model User {
   recurring_transactions   RecurringTransaction[]
   budgets                  Budget[]
   receipts                 Receipt[]
+  device_tokens            DeviceToken[]
 
   @@map("users")
 }
@@ -302,4 +308,19 @@ model Receipt {
 
   @@index([user_id, deleted_at])
   @@map("receipts")
+}
+
+model DeviceToken {
+  id         String         @id @default(cuid())
+  user_id    String
+  token      String         @unique
+  platform   DevicePlatform
+  label      String?
+  created_at DateTime       @default(now())
+  updated_at DateTime       @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("device_tokens")
 }
