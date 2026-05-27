@@ -378,7 +378,7 @@ Sub-project owner: which sub-project spec will design & implement this. See § 1
 | budgets (envelope) CRUD | domain-crud | Free | categories | done |
 | goals CRUD | domain-crud | Free | wallets | done |
 | assets CRUD | domain-crud | Plus | — | todo |
-| receipts (struk metadata) | domain-crud | Free | transactions | todo |
+| receipts (struk metadata) | domain-crud | Free | transactions | done |
 | tanya chat (AI) | ai-worker | Plus | api-foundation | todo |
 | tanya quota tracking | ai-worker | Plus | tanya | todo |
 | scan-struk OCR | ai-worker | Plus | receipts | todo |

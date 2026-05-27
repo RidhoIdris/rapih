@@ -13,6 +13,7 @@ export const ERROR_MESSAGES = {
   'budget.not_found': 'Budget tidak ditemukan.',
   'category.not_found': 'Kategori tidak ditemukan.',
   'goal.not_found': 'Goal tidak ditemukan.',
+  'receipt.not_found': 'Struk tidak ditemukan.',
   'recurring.not_found': 'Tagihan rutin tidak ditemukan.',
   'transaction.not_found': 'Transaksi tidak ditemukan.',
   'wallet.not_found': 'Dompet tidak ditemukan.',

@@ -8,6 +8,7 @@ export function transactionToDto(row: Transaction): TransactionDto {
     wallet_id: row.wallet_id,
     to_wallet_id: row.to_wallet_id ?? null,
     category_id: row.category_id ?? null,
+    receipt_id: row.receipt_id ?? null,
     amount: row.amount.toString(),
     note: row.note ?? null,
     transacted_at: row.transacted_at.toISOString(),

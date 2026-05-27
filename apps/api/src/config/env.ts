@@ -26,6 +26,13 @@ const EnvSchema = z.object({
 
   GOOGLE_OAUTH_CLIENT_IDS: CommaList,
   APPLE_OAUTH_CLIENT_IDS: CommaList,
+
+  // Cloudflare R2 — optional; if absent, image uploads are silently skipped
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().optional(),
+  R2_PUBLIC_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

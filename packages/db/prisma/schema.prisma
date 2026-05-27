@@ -84,6 +84,7 @@ model User {
   goals                    Goal[]
   recurring_transactions   RecurringTransaction[]
   budgets                  Budget[]
+  receipts                 Receipt[]
 
   @@map("users")
 }
@@ -182,6 +183,7 @@ model Transaction {
   wallet_id     String
   to_wallet_id  String?
   category_id   String?
+  receipt_id    String?
   amount        BigInt
   note          String?
   transacted_at DateTime
@@ -193,11 +195,13 @@ model Transaction {
   wallet        Wallet          @relation("TransactionWallet", fields: [wallet_id], references: [id])
   to_wallet     Wallet?         @relation("TransactionToWallet", fields: [to_wallet_id], references: [id])
   category      Category?       @relation(fields: [category_id], references: [id])
+  receipt       Receipt?        @relation(fields: [receipt_id], references: [id], onDelete: SetNull)
 
   @@index([user_id, deleted_at])
   @@index([wallet_id])
   @@index([to_wallet_id])
   @@index([category_id])
+  @@index([receipt_id])
   @@index([transacted_at])
   @@map("transactions")
 }
@@ -280,4 +284,22 @@ model BudgetCategory {
   @@id([budget_id, category_id])
   @@index([category_id])
   @@map("budget_categories")
+}
+
+model Receipt {
+  id            String    @id @default(cuid())
+  user_id       String
+  image_url     String?
+  merchant_name String?
+  total_amount  BigInt?
+  scanned_at    DateTime
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+
+  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([user_id, deleted_at])
+  @@map("receipts")
 }

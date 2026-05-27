@@ -97,6 +97,7 @@ export const transactionsRoutes: FastifyPluginAsyncZod = async (app) => {
           wallet_id: body.wallet_id,
           to_wallet_id: body.to_wallet_id ?? null,
           category_id: body.category_id ?? null,
+          receipt_id: body.receipt_id ?? null,
           amount: BigInt(body.amount),
           note: body.note ?? null,
           transacted_at: new Date(body.transacted_at),
@@ -187,6 +188,7 @@ export const transactionsRoutes: FastifyPluginAsyncZod = async (app) => {
           wallet_id: body.wallet_id,
           to_wallet_id: body.to_wallet_id,
           category_id: body.category_id,
+          receipt_id: body.receipt_id,
           amount: body.amount !== undefined ? BigInt(body.amount) : undefined,
           note: body.note,
           transacted_at:
