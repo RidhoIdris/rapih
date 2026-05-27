@@ -1,8 +1,8 @@
 import { Pressable, View, type ViewStyle } from 'react-native';
 
-import { palette, radius, shadow } from '@/theme';
 import { Icon, type IconName } from '@/components/icons/icon';
 import { haptics } from '@/lib/haptics';
+import { palette, radius, shadow } from '@/theme';
 
 import { Text } from './text';
 
@@ -42,6 +42,8 @@ type Props = {
   icon?: IconName;
   /** Stretch to fill the parent row */
   fullWidth?: boolean;
+  /** When true, suppresses press handling and renders at reduced opacity. */
+  disabled?: boolean;
   style?: ViewStyle;
 };
 
@@ -51,13 +53,16 @@ export function Button({
   variant = 'primary',
   icon,
   fullWidth,
+  disabled,
   style,
 }: Props) {
   const v = VARIANT[variant];
   const small = variant === 'social';
   return (
     <Pressable
+      disabled={disabled}
       onPress={() => {
+        if (disabled) return;
         haptics.tap();
         onPress?.();
       }}
@@ -74,7 +79,7 @@ export function Button({
           borderWidth: v.border ? 1 : 0,
           borderColor: v.border,
           boxShadow: v.boxShadow,
-          opacity: pressed ? 0.85 : 1,
+          opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
           flex: fullWidth ? 1 : undefined,
           alignSelf: fullWidth ? 'stretch' : undefined,
         },

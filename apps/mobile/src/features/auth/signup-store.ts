@@ -1,33 +1,14 @@
+import type { IncomeRange, PrimaryGoal } from '@rapih/shared';
 import { create } from 'zustand';
 
 /**
- * Signup wizard state — shared across the 3 register steps so a back/next
- * navigation keeps what the user entered. UI-only build: there is no API
- * call. The store is seeded with the design's example content so screens
- * render exactly like the mock; clear these defaults to '' when wiring real
- * <TextInput>s.
+ * Onboarding draft state — held in memory across the 3 onboarding screens
+ * (name → income → done). Submitted to PATCH /me/onboarding when user finishes.
  */
 
-export type IncomeRange =
-  | 'lt3'
-  | '3to7'
-  | '7to15'
-  | '15to30'
-  | 'gt30'
-  | 'variable';
-
-export type PrimaryGoal =
-  | 'save'
-  | 'track'
-  | 'goal'
-  | 'invest'
-  | 'debt'
-  | 'bills';
+export type { IncomeRange, PrimaryGoal };
 
 type SignupState = {
-  email: string;
-  password: string;
-  agreeTos: boolean;
   nickname: string;
   income: IncomeRange | null;
   goal: PrimaryGoal | null;
@@ -35,13 +16,10 @@ type SignupState = {
   reset: () => void;
 };
 
-const SEED = {
-  email: 'adelia.rahmadini@gmail.com',
-  password: '',
-  agreeTos: true,
-  nickname: 'Adelia',
-  income: '7to15' as IncomeRange,
-  goal: 'save' as PrimaryGoal,
+const SEED: Omit<SignupState, 'set' | 'reset'> = {
+  nickname: '',
+  income: null,
+  goal: null,
 };
 
 export const useSignupStore = create<SignupState>((set) => ({

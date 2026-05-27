@@ -1,20 +1,20 @@
-import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Pressable, View } from 'react-native';
 
-import { palette, radius, space } from '@/theme';
 import { Button, Screen, Text } from '@/components/ui';
 import { StepHeader } from '@/features/auth/components/step-header';
 import {
-  useSignupStore,
-  type IncomeRange,
-  type PrimaryGoal,
+    type IncomeRange,
+    type PrimaryGoal,
+    useSignupStore,
 } from '@/features/auth/signup-store';
+import { palette, radius, space } from '@/theme';
 
 const RANGES: { id: IncomeRange; label: string; sub: string }[] = [
   { id: 'lt3', label: '< Rp 3jt', sub: 'Awal karier' },
-  { id: '3to7', label: 'Rp 3 – 7jt', sub: 'Junior / freelance' },
-  { id: '7to15', label: 'Rp 7 – 15jt', sub: 'Profesional' },
-  { id: '15to30', label: 'Rp 15 – 30jt', sub: 'Senior / dual income' },
+  { id: 'r3to7', label: 'Rp 3 – 7jt', sub: 'Junior / freelance' },
+  { id: 'r7to15', label: 'Rp 7 – 15jt', sub: 'Profesional' },
+  { id: 'r15to30', label: 'Rp 15 – 30jt', sub: 'Senior / dual income' },
   { id: 'gt30', label: '> Rp 30jt', sub: 'Manajerial / bisnis' },
   { id: 'variable', label: 'Belum tetap', sub: 'Mahasiswa / variable' },
 ];
@@ -40,14 +40,15 @@ const SectionLabel = ({ children }: { children: string }) => (
 export function SignupIncomeScreen() {
   const router = useRouter();
   const { income, goal, set } = useSignupStore();
+  const canContinue = income !== null && goal !== null;
 
   return (
     <Screen background={palette.bg} bottomInset={4}>
-      <StepHeader step={3} onSkip={() => router.replace('/(auth)/done')} />
+      <StepHeader step={2} total={2} />
 
       <View style={{ paddingTop: space.xl, paddingHorizontal: space.xxl }}>
         <Text variant="eyebrow" color={palette.cool} style={{ letterSpacing: 1.5 }}>
-          Langkah 3 dari 3
+          Langkah 2 dari 2
         </Text>
         <Text variant="displayS" style={{ marginTop: 8 }}>
           Biar Rapih bisa{'\n'}kasih saran{' '}
@@ -58,7 +59,6 @@ export function SignupIncomeScreen() {
         </Text>
       </View>
 
-      {/* income range */}
       <View style={{ paddingTop: space.xl, paddingHorizontal: space.xl }}>
         <SectionLabel>PENGHASILAN / BULAN</SectionLabel>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
@@ -95,7 +95,6 @@ export function SignupIncomeScreen() {
         </View>
       </View>
 
-      {/* primary goal */}
       <View style={{ paddingTop: 18, paddingHorizontal: space.xl }}>
         <SectionLabel>TUJUAN UTAMA · PILIH 1</SectionLabel>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
@@ -137,6 +136,7 @@ export function SignupIncomeScreen() {
           label="Selesai"
           icon="arrowR"
           fullWidth
+          disabled={!canContinue}
           onPress={() => router.replace('/(auth)/done')}
         />
       </View>

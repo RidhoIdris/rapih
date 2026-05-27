@@ -1,26 +1,57 @@
-import { View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, View } from 'react-native';
 
+import { RapihMark, RapihWordmark } from '@/components/brand';
+import { BackButton, Button, Glow, Screen, Text } from '@/components/ui';
+import { signInWithGoogle } from '@/features/auth/api';
+import { useAuthStore } from '@/features/auth/auth-store';
+import { googleSignIn } from '@/features/auth/google-signin';
 import { palette, space } from '@/theme';
-import { RapihWordmark } from '@/components/brand';
-import {
-  BackButton,
-  Button,
-  Field,
-  LabeledDivider,
-  Screen,
-  Text,
-} from '@/components/ui';
-import { useSignupStore } from '@/features/auth/signup-store';
-
-const SOCIALS = ['Google', 'Apple', 'GoPay'] as const;
 
 export function LoginScreen() {
   const router = useRouter();
-  const email = useSignupStore((s) => s.email);
+  const setSession = useAuthStore((s) => s.setSession);
+  const [busy, setBusy] = useState(false);
+
+  const handleGoogle = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const result = await googleSignIn();
+      if (result.kind === 'cancelled') {
+        return; // user backed out — silent
+      }
+      if (result.kind !== 'success') {
+        Alert.alert('Gagal masuk', `Google sign-in: ${result.kind}`);
+        return;
+      }
+
+      const session = await signInWithGoogle(result.idToken);
+      await setSession({
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token,
+        user: session.user,
+      });
+
+      // Route based on onboarding state
+      if (session.user.onboarding_completed_at) {
+        router.replace('/(app)/beranda' as Href);
+      } else {
+        router.replace('/(auth)/register/name');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan.';
+      Alert.alert('Gagal masuk', message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
-    <Screen background={palette.bg} bottomInset={8}>
+    <Screen background={palette.moss} bottomInset={8}>
+      <Glow size={360} opacity={0.4} fadeAt={0.65} position={{ top: -80, right: -100 }} />
+
       {/* nav */}
       <View
         style={{
@@ -31,88 +62,57 @@ export function LoginScreen() {
           justifyContent: 'space-between',
         }}>
         <BackButton />
-        <RapihWordmark size={14} />
+        <RapihWordmark size={14} color={palette.onDark} accent={palette.lime} />
         <View style={{ width: 38 }} />
       </View>
 
+      <View style={{ flex: 1 }} />
+
       {/* hero */}
-      <View style={{ paddingTop: space.xxxl, paddingHorizontal: space.xxl }}>
-        <Text variant="eyebrow" color={palette.cool} style={{ letterSpacing: 1.5 }}>
-          Selamat datang kembali
+      <View style={{ paddingHorizontal: space.xxl, alignItems: 'center' }}>
+        <RapihMark size={56} color={palette.lime} accent={palette.onDark} />
+        <Text
+          variant="eyebrow"
+          color={palette.lime}
+          style={{ letterSpacing: 1.8, marginTop: 24 }}>
+          Mulai dalam satu ketukan
         </Text>
-        <Text variant="displayL" style={{ marginTop: 8 }}>
-          Lanjutkan{'\n'}
-          <Text variant="displayL" color={palette.cool} style={{ fontStyle: 'italic' }}>
-            cerita keuanganmu
+        <Text
+          variant="displayL"
+          color={palette.onDark}
+          style={{ marginTop: 12, textAlign: 'center' }}>
+          Masuk dengan{'\n'}
+          <Text variant="displayL" color={palette.lime} style={{ fontStyle: 'italic' }}>
+            akun Google
           </Text>
-          .
+          mu.
+        </Text>
+        <Text
+          variant="body"
+          color="rgba(240,240,232,0.65)"
+          style={{ marginTop: 14, maxWidth: 300, textAlign: 'center' }}>
+          Tidak perlu password. Aman, cepat, dan datamu tetap pribadi.
         </Text>
       </View>
 
-      {/* form */}
-      <View style={{ paddingTop: space.xxl, paddingHorizontal: space.xl, gap: space.md }}>
-        <Field label="Email" value={email} />
-        <Field
-          label="Kata sandi"
-          value="••••••••"
-          focused
-          valueStyle={{ fontSize: 18 }}
-          valueLetterSpacing={4}
-          trailing={
-            <Text variant="bodySm" color={palette.cool} style={{ fontSize: 11 }}>
-              Lihat
-            </Text>
-          }
-        />
-        <View style={{ alignItems: 'flex-end', paddingHorizontal: space.xs }}>
-          <Text variant="bodySm" color={palette.inkSoft}>
-            Lupa kata sandi?
-          </Text>
-        </View>
-      </View>
+      <View style={{ flex: 1 }} />
 
-      <View style={{ flex: 1, minHeight: space.xxl }} />
-
-      {/* CTA + social */}
-      <View style={{ paddingHorizontal: space.xl, paddingBottom: space.xxl }}>
+      {/* CTA */}
+      <View style={{ paddingHorizontal: space.xl, paddingBottom: space.xxl, gap: 12 }}>
         <Button
-          variant="primary"
-          label="Masuk"
+          variant="accent"
+          label={busy ? 'Memproses…' : 'Lanjut dengan Google'}
           icon="arrowR"
           fullWidth
-          onPress={() => router.replace('/(auth)/done')}
+          onPress={handleGoogle}
+          disabled={busy}
         />
-
-        <View style={{ paddingVertical: space.lg }}>
-          <LabeledDivider label="atau lanjutkan dengan" />
-        </View>
-
-        <View style={{ flexDirection: 'row', gap: space.sm }}>
-          {SOCIALS.map((p) => (
-            <Button key={p} variant="social" label={p} fullWidth />
-          ))}
-        </View>
-
-        <View
-          style={{
-            marginTop: space.lg,
-            flexDirection: 'row',
-            justifyContent: 'center',
-          }}>
-          <Text variant="bodySm" color={palette.inkSoft}>
-            Belum punya akun?{' '}
-          </Text>
-          <Text
-            variant="bodySm"
-            color={palette.ink}
-            onPress={() => router.push('/(auth)/register/email')}
-            style={{
-              fontWeight: '600',
-              textDecorationLine: 'underline',
-            }}>
-            Daftar gratis
-          </Text>
-        </View>
+        <Text
+          variant="bodySm"
+          color="rgba(240,240,232,0.55)"
+          style={{ textAlign: 'center', fontSize: 11.5, marginTop: 4 }}>
+          Sign in with Apple akan ditambahkan segera.
+        </Text>
       </View>
     </Screen>
   );

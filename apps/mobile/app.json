@@ -11,10 +11,18 @@
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.ridhoidris.rapih",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.806008574126-0car974hcp809kn5u92h0a3idi4jrufa"
+            ]
+          }
+        ]
       }
     },
     "android": {
+      "package": "com.ridhoidris.rapih",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -34,7 +42,14 @@
         {
           "backgroundColor": "#2d4733"
         }
-      ]
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.806008574126-0car974hcp809kn5u92h0a3idi4jrufa"
+        }
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

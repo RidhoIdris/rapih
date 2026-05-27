@@ -1,12 +1,15 @@
-import { View } from 'react-native';
+import { type Href, useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { useRouter, type Href } from 'expo-router';
 
-import { palette, radius, space } from '@/theme';
 import { RapihWordmark } from '@/components/brand';
 import { Icon } from '@/components/icons/icon';
 import { Button, Glow, Screen, Text } from '@/components/ui';
+import { patchOnboarding } from '@/features/auth/api';
+import { useAuthStore } from '@/features/auth/auth-store';
 import { useSignupStore } from '@/features/auth/signup-store';
+import { palette, radius, space } from '@/theme';
 
 const STEPS = [
   { t: 'Tambah dompet pertama', s: 'Pilih bank / e-wallet / cash', d: '· 2 menit' },
@@ -16,13 +19,34 @@ const STEPS = [
 
 export function SignupDoneScreen() {
   const router = useRouter();
-  const nickname = useSignupStore((s) => s.nickname);
-  const reset = useSignupStore((s) => s.reset);
+  const { nickname, income, goal, reset } = useSignupStore();
+  const setUser = useAuthStore((s) => s.setUser);
+  const [busy, setBusy] = useState(false);
 
-  const enterApp = () => {
-    reset();
-    // Cast until Metro regenerates typed routes on first `expo start`.
-    router.replace('/(app)/beranda' as Href);
+  const enterApp = async () => {
+    if (busy) return;
+    if (!nickname.trim() || !income || !goal) {
+      Alert.alert('Data belum lengkap', 'Lengkapi semua langkah onboarding dulu.');
+      router.replace('/(auth)/register/name');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const updatedUser = await patchOnboarding({
+        nickname: nickname.trim(),
+        income_range: income,
+        primary_goal: goal,
+      });
+      setUser(updatedUser);
+      reset();
+      router.replace('/(app)/beranda' as Href);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan.';
+      Alert.alert('Gagal menyimpan', message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -53,8 +77,7 @@ export function SignupDoneScreen() {
             backgroundColor: palette.lime,
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow:
-              '0 0 0 14px rgba(184,232,194,0.12), 0 0 0 28px rgba(184,232,194,0.06)',
+            boxShadow: '0 0 0 14px rgba(184,232,194,0.12), 0 0 0 28px rgba(184,232,194,0.06)',
           }}>
           <Svg width={40} height={40} viewBox="0 0 40 40" fill="none">
             <Path
@@ -66,10 +89,7 @@ export function SignupDoneScreen() {
             />
           </Svg>
         </View>
-        <Text
-          variant="eyebrow"
-          color={palette.lime}
-          style={{ letterSpacing: 1.8, marginTop: 36 }}>
+        <Text variant="eyebrow" color={palette.lime} style={{ letterSpacing: 1.8, marginTop: 36 }}>
           Akun siap dipakai
         </Text>
         <Text
@@ -78,7 +98,7 @@ export function SignupDoneScreen() {
           style={{ marginTop: 12, textAlign: 'center' }}>
           Selamat datang,{'\n'}
           <Text variant="displayL" color={palette.lime} style={{ fontStyle: 'italic' }}>
-            {nickname}
+            {nickname || 'teman'}
           </Text>
           .
         </Text>
@@ -126,7 +146,10 @@ export function SignupDoneScreen() {
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text variant="bodySm" color={palette.onDark} style={{ fontSize: 13, fontWeight: '600' }}>
+              <Text
+                variant="bodySm"
+                color={palette.onDark}
+                style={{ fontSize: 13, fontWeight: '600' }}>
                 {r.t}
               </Text>
               <Text
@@ -144,14 +167,14 @@ export function SignupDoneScreen() {
       <View style={{ flex: 1, minHeight: space.lg }} />
 
       <View style={{ paddingTop: 14, paddingHorizontal: space.xl, paddingBottom: space.xxl }}>
-        <Button variant="accent" label="Mulai pakai Rapih" icon="arrowR" fullWidth onPress={enterApp} />
-        <Text
-          variant="bodySm"
-          color="rgba(240,240,232,0.5)"
+        <Button
+          variant="accent"
+          label={busy ? 'Menyimpan…' : 'Mulai pakai Rapih'}
+          icon="arrowR"
+          fullWidth
+          disabled={busy}
           onPress={enterApp}
-          style={{ marginTop: 12, textAlign: 'center', fontSize: 11.5 }}>
-          Atau lewati — mulai dari beranda kosong
-        </Text>
+        />
       </View>
     </Screen>
   );
