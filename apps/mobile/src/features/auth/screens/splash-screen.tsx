@@ -1,12 +1,36 @@
+import { type Href, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
-import { useRouter } from 'expo-router';
 
-import { palette, space } from '@/theme';
 import { RapihMark } from '@/components/brand';
 import { Button, Glow, Screen, Text } from '@/components/ui';
+import { useAuthStore } from '@/features/auth/auth-store';
+import { bootstrapAuth } from '@/features/auth/bootstrap';
+import { palette, space } from '@/theme';
 
 export function SplashScreen() {
   const router = useRouter();
+  const status = useAuthStore((s) => s.status);
+  const user = useAuthStore((s) => s.user);
+
+  // Bootstrap auth on first mount.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only run once on mount
+  useEffect(() => {
+    void bootstrapAuth();
+  }, []);
+
+  // After bootstrap completes, route accordingly.
+  useEffect(() => {
+    if (status === 'unknown') return;
+    if (status === 'authenticated' && user) {
+      if (user.onboarding_completed_at) {
+        router.replace('/(app)/beranda' as Href);
+      } else {
+        router.replace('/(auth)/register/name');
+      }
+    }
+    // 'unauthenticated' → stay on splash, show CTAs
+  }, [status, user, router]);
 
   return (
     <Screen background={palette.moss} bottomInset={8}>
@@ -23,10 +47,7 @@ export function SplashScreen() {
           gap: 10,
         }}>
         <RapihMark size={26} color={palette.lime} accent={palette.onDark} />
-        <Text
-          color={palette.onDark}
-          variant="button"
-          style={{ fontSize: 18, letterSpacing: -0.4 }}>
+        <Text color={palette.onDark} variant="button" style={{ fontSize: 18, letterSpacing: -0.4 }}>
           rapih
         </Text>
       </View>
@@ -64,13 +85,8 @@ export function SplashScreen() {
         }}>
         <Button
           variant="accent"
-          label="Mulai gratis · 2 menit"
+          label="Masuk dengan Google"
           icon="arrowR"
-          onPress={() => router.push('/(auth)/register/email')}
-        />
-        <Button
-          variant="outlineDark"
-          label="Sudah punya akun? Masuk"
           onPress={() => router.push('/(auth)/login')}
         />
       </View>
