@@ -2,12 +2,12 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 
-import { Button, Chip, Field, Screen, Text } from '@/components/ui';
+import { Button, Field, Screen, Text } from '@/components/ui';
 import { StepHeader } from '@/features/auth/components/step-header';
 import { useSignupStore } from '@/features/auth/signup-store';
 import { palette, radius, space } from '@/theme';
 
-const SUGGESTIONS = ['Del', 'Adel', 'Lia', 'Adelia R.', 'Kak Del'];
+// const SUGGESTIONS = ['Del', 'Adel', 'Lia', 'Adelia R.', 'Kak Del'];
 
 export function SignupNameScreen() {
   const router = useRouter();
@@ -78,7 +78,7 @@ export function SignupNameScreen() {
           </View>
         )}
 
-        <View style={{ marginTop: 18 }}>
+        {/* <View style={{ marginTop: 18 }}>
           <Text
             variant="bodySm"
             color={palette.inkMute}
@@ -96,7 +96,7 @@ export function SignupNameScreen() {
               />
             ))}
           </View>
-        </View>
+        </View> */}
       </View>
 
       <View style={{ flex: 1, minHeight: space.xl }} />

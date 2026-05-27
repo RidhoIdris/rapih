@@ -1,6 +1,6 @@
 import type { ErrorCode } from '@rapih/shared';
-import { env } from './env.js';
-import { clearRefreshToken, getRefreshToken, setRefreshToken } from './secure-store.js';
+import { env } from './env';
+import { clearRefreshToken, getRefreshToken, setRefreshToken } from './secure-store';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
