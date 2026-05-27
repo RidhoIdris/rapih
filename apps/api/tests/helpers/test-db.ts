@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import { createPrismaClient, type PrismaClient } from '@rapih/db';
+import { seedSystemCategories } from './seed-categories.js';
 
 const TEST_DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://rapih:rapih@localhost:5433/rapih_test';
@@ -18,9 +19,12 @@ export function getTestPrisma(): PrismaClient {
  */
 export async function resetTestDb(): Promise<void> {
   const prisma = getTestPrisma();
+  // Include "categories" explicitly so CASCADE doesn't leave system categories
+  // in an unknown state. Re-seed them afterwards.
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE "refresh_tokens", "social_accounts", "user_profiles", "users" RESTART IDENTITY CASCADE'
+    'TRUNCATE TABLE "refresh_tokens", "social_accounts", "user_profiles", "wallets", "categories", "users" RESTART IDENTITY CASCADE'
   );
+  await seedSystemCategories(prisma);
 }
 
 /**

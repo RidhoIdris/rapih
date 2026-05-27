@@ -21,6 +21,7 @@ export async function registerSwagger(app: FastifyInstance): Promise<void> {
         { name: 'meta', description: 'Service health and metadata.' },
         { name: 'auth', description: 'Authentication endpoints (Google + Apple sign-in).' },
         { name: 'me', description: 'Current-user endpoints (profile, onboarding).' },
+        { name: 'categories', description: 'Category CRUD (system + user-custom).' },
         { name: 'wallets', description: 'Wallet (dompet) CRUD.' },
       ],
     },

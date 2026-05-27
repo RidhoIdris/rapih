@@ -371,7 +371,7 @@ Sub-project owner: which sub-project spec will design & implement this. See § 1
 | admin user list / detail | cms-basics | — | api-foundation | todo |
 | admin tier override | cms-basics | — | api-foundation | todo |
 | admin category CRUD | cms-basics | — | api-foundation | todo |
-| categories (system + user) | domain-crud | Free | api-foundation | todo |
+| categories (system + user) | domain-crud | Free | api-foundation | done |
 | wallets (dompet) CRUD | domain-crud | Free | api-foundation | done |
 | transactions CRUD | domain-crud | Free | wallets, categories | todo |
 | recurring (rutin) CRUD | domain-crud | Free | transactions | todo |
