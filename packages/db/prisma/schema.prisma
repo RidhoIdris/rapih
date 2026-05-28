@@ -69,43 +69,44 @@ enum DevicePlatform {
 }
 
 model User {
-  id                       String    @id @default(cuid())
-  email                    String    @unique
-  email_verified_at        DateTime?
-  name                     String
-  tier                     UserTier  @default(free)
-  apple_private_relay      Boolean   @default(false)
-  onboarding_completed_at  DateTime?
+  id                      String    @id @default(cuid())
+  email                   String    @unique
+  email_verified_at       DateTime?
+  name                    String
+  tier                    UserTier  @default(free)
+  apple_private_relay     Boolean   @default(false)
+  onboarding_completed_at DateTime?
 
-  created_at               DateTime  @default(now())
-  updated_at               DateTime  @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  social_accounts          SocialAccount[]
-  refresh_tokens           RefreshToken[]
-  profile                  UserProfile?
-  wallets                  Wallet[]
-  categories               Category[]
-  transactions             Transaction[]
-  goals                    Goal[]
-  recurring_transactions   RecurringTransaction[]
-  budgets                  Budget[]
-  receipts                 Receipt[]
-  device_tokens            DeviceToken[]
-  notifications            Notification[]
-  ai_sessions              AiSession[]
-  ai_usage_logs            AiUsageLog[]
+  social_accounts        SocialAccount[]
+  refresh_tokens         RefreshToken[]
+  profile                UserProfile?
+  wallets                Wallet[]
+  categories             Category[]
+  transactions           Transaction[]
+  goals                  Goal[]
+  recurring_transactions RecurringTransaction[]
+  budgets                Budget[]
+  receipts               Receipt[]
+  device_tokens          DeviceToken[]
+  notifications          Notification[]
+  ai_sessions            AiSession[]
+  ai_usage_logs          AiUsageLog[]
+  receipt_scans          ReceiptScan[]
 
   @@map("users")
 }
 
 model SocialAccount {
-  id                String         @id @default(cuid())
-  user_id           String
-  provider          SocialProvider
-  provider_user_id  String
-  created_at        DateTime       @default(now())
+  id               String         @id @default(cuid())
+  user_id          String
+  provider         SocialProvider
+  provider_user_id String
+  created_at       DateTime       @default(now())
 
-  user              User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([provider, provider_user_id])
   @@index([user_id])
@@ -113,18 +114,18 @@ model SocialAccount {
 }
 
 model RefreshToken {
-  id              String    @id @default(cuid())
-  user_id         String
-  token_hash      String    @unique
-  expires_at      DateTime
-  revoked_at      DateTime?
-  replaced_by_id  String?   @unique
-  device_label    String?
-  created_at      DateTime  @default(now())
+  id             String    @id @default(cuid())
+  user_id        String
+  token_hash     String    @unique
+  expires_at     DateTime
+  revoked_at     DateTime?
+  replaced_by_id String?   @unique
+  device_label   String?
+  created_at     DateTime  @default(now())
 
-  user            User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  replaced_by     RefreshToken? @relation("TokenRotation", fields: [replaced_by_id], references: [id])
-  replaces        RefreshToken? @relation("TokenRotation")
+  user        User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  replaced_by RefreshToken? @relation("TokenRotation", fields: [replaced_by_id], references: [id])
+  replaces    RefreshToken? @relation("TokenRotation")
 
   @@index([user_id])
   @@index([expires_at])
@@ -132,14 +133,14 @@ model RefreshToken {
 }
 
 model UserProfile {
-  user_id        String       @id
-  nickname       String?
-  income_range   IncomeRange?
-  primary_goal   PrimaryGoal?
-  created_at     DateTime     @default(now())
-  updated_at     DateTime     @updatedAt
+  user_id      String       @id
+  nickname     String?
+  income_range IncomeRange?
+  primary_goal PrimaryGoal?
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
 
-  user           User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
 }
@@ -155,10 +156,10 @@ model Wallet {
   updated_at      DateTime   @updatedAt
   deleted_at      DateTime?
 
-  user                User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  transactions        Transaction[] @relation("TransactionWallet")
-  transfers_received  Transaction[] @relation("TransactionToWallet")
-  goals               Goal[]
+  user                   User                   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions           Transaction[]          @relation("TransactionWallet")
+  transfers_received     Transaction[]          @relation("TransactionToWallet")
+  goals                  Goal[]
   recurring_transactions RecurringTransaction[]
 
   @@index([user_id, deleted_at])
@@ -186,31 +187,34 @@ model Category {
 }
 
 model Transaction {
-  id            String          @id @default(cuid())
-  user_id       String
-  kind          TransactionKind
-  wallet_id     String
-  to_wallet_id  String?
-  category_id   String?
-  receipt_id    String?
-  amount        BigInt
-  note          String?
-  transacted_at DateTime
-  created_at    DateTime        @default(now())
-  updated_at    DateTime        @updatedAt
-  deleted_at    DateTime?
+  id              String          @id @default(cuid())
+  user_id         String
+  kind            TransactionKind
+  wallet_id       String
+  to_wallet_id    String?
+  category_id     String?
+  receipt_id      String?
+  receipt_scan_id String?
+  amount          BigInt
+  note            String?
+  transacted_at   DateTime
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  deleted_at      DateTime?
 
-  user          User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  wallet        Wallet          @relation("TransactionWallet", fields: [wallet_id], references: [id])
-  to_wallet     Wallet?         @relation("TransactionToWallet", fields: [to_wallet_id], references: [id])
-  category      Category?       @relation(fields: [category_id], references: [id])
-  receipt       Receipt?        @relation(fields: [receipt_id], references: [id], onDelete: SetNull)
+  user         User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  wallet       Wallet       @relation("TransactionWallet", fields: [wallet_id], references: [id])
+  to_wallet    Wallet?      @relation("TransactionToWallet", fields: [to_wallet_id], references: [id])
+  category     Category?    @relation(fields: [category_id], references: [id])
+  receipt      Receipt?     @relation(fields: [receipt_id], references: [id], onDelete: SetNull)
+  receipt_scan ReceiptScan? @relation("ReceiptScanTransactions", fields: [receipt_scan_id], references: [id], onDelete: SetNull)
 
   @@index([user_id, deleted_at])
   @@index([wallet_id])
   @@index([to_wallet_id])
   @@index([category_id])
   @@index([receipt_id])
+  @@index([receipt_scan_id])
   @@index([transacted_at])
   @@map("transactions")
 }
@@ -229,8 +233,8 @@ model Goal {
   updated_at    DateTime  @updatedAt
   deleted_at    DateTime?
 
-  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  wallet        Wallet?   @relation(fields: [wallet_id], references: [id], onDelete: SetNull)
+  user   User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  wallet Wallet? @relation(fields: [wallet_id], references: [id], onDelete: SetNull)
 
   @@index([user_id, deleted_at])
   @@index([wallet_id])
@@ -266,14 +270,14 @@ model RecurringTransaction {
 }
 
 model Budget {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   user_id    String
   name       String
   icon       String
   color      String
   amount     BigInt
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
   user              User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -313,6 +317,41 @@ model Receipt {
   @@map("receipts")
 }
 
+enum ReceiptScanStatus {
+  pending
+  processing
+  ready
+  consumed
+  failed
+}
+
+enum ReceiptScanSource {
+  in_app
+  share_intent
+}
+
+model ReceiptScan {
+  id            String            @id @default(cuid())
+  user_id       String
+  source        ReceiptScanSource
+  status        ReceiptScanStatus @default(pending)
+  r2_key        String
+  content_type  String
+  size_bytes    Int
+  ocr_result    Json?
+  failed_reason String?
+  consumed_at   DateTime?
+  created_at    DateTime          @default(now())
+  updated_at    DateTime          @updatedAt
+  deleted_at    DateTime?
+
+  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions Transaction[] @relation("ReceiptScanTransactions")
+
+  @@index([user_id, deleted_at, created_at])
+  @@map("receipt_scans")
+}
+
 model DeviceToken {
   id         String         @id @default(cuid())
   user_id    String
@@ -333,6 +372,8 @@ enum NotificationKind {
   goal_deadline
   streak_nudge
   weekly_review
+  receipt_ready
+  receipt_failed
 }
 
 model Notification {
