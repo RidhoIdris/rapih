@@ -382,10 +382,10 @@ Sub-project owner: which sub-project spec will design & implement this. See § 1
 | tanya chat (AI) | ai-worker | Plus | api-foundation | todo |
 | tanya quota tracking | ai-worker | Plus | tanya | todo |
 | scan-struk OCR | ai-worker | Plus | receipts | todo |
-| recurring auto-create (cron) | reminder-worker | Free | recurring | todo |
-| due / goal push notif | reminder-worker | Free | device tokens | todo |
-| streak nudge push | reminder-worker | Free | transactions | todo |
-| weekly review story gen | reminder-worker | Pro | transactions | todo |
+| recurring auto-create (cron) | reminder-worker | Free | recurring | done |
+| due / goal push notif | reminder-worker | Free | device tokens | done |
+| streak nudge push | reminder-worker | Free | transactions | done |
+| weekly review story gen | reminder-worker | Pro | transactions | done (enqueue only; ai-worker consumer pending) |
 | manual tier upgrade (CMS) | cms-basics | — | subscriptions | todo |
 | mayar checkout + webhook | billing-web | — | subscriptions | planned |
 | apple iap verify + webhook | billing-ios | — | subscriptions | planned |
