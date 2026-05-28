@@ -1724,12 +1724,15 @@ export async function runDuePush(
     include: { user: { include: { device_tokens: true } } },
   });
   for (const r of recurringDue) {
+    if (r.user.device_tokens.length === 0) {
+      skipped++;
+      continue;
+    }
     const key = `push:recurring-due:${ymdUtc(today)}:${r.id}`;
     if (!(await claim(key, TTL))) {
       skipped++;
       continue;
     }
-    if (r.user.device_tokens.length === 0) continue;
     const notifId = await writeNotification(prisma, {
       user_id: r.user_id,
       kind: 'recurring_due',
@@ -1761,12 +1764,15 @@ export async function runDuePush(
       include: { user: { include: { device_tokens: true } } },
     });
     for (const g of goals) {
+      if (g.user.device_tokens.length === 0) {
+        skipped++;
+        continue;
+      }
       const key = `push:goal-due:${ymdUtc(today)}:${g.id}:${marker}`;
       if (!(await claim(key, TTL))) {
         skipped++;
         continue;
       }
-      if (g.user.device_tokens.length === 0) continue;
       const gap = g.target_amount - g.saved_amount;
       const title =
         marker === 'H7' ? `Goal ${g.name} tinggal 7 hari` : `Goal ${g.name} besok!`;
@@ -1989,9 +1995,8 @@ describe('due-push', () => {
     const { fetchImpl, calls } = makeExpoMock();
     await runDuePush(NOW, fetchImpl);
     expect(calls).toHaveLength(0);
-    // Notification IS written even without devices — per spec, only streak skips entirely.
-    // Re-check spec § 5.2 vs § 5.3.
-    expect(await prisma.notification.count()).toBeGreaterThanOrEqual(1);
+    // Spec § 5.2: skip entirely when user has zero devices — no Notification row.
+    expect(await prisma.notification.count()).toBe(0);
   });
 
   it('deletes device token on DeviceNotRegistered', async () => {
@@ -2049,7 +2054,7 @@ describe('due-push', () => {
 });
 ```
 
-> **Note on spec consistency (§ 5.2 vs § 5.3):** For `due-push`, the spec § 5.2 doesn't say to skip notification-write when user has zero devices. The test above asserts the row IS still written. For `streak-nudge` (§ 5.3 + § 12), zero devices → skip entirely. If the spec was meant to be consistent (skip across all), update both — defer that to user review.
+> **Spec consistency (§ 5.2 + § 5.3 both):** zero devices → skip entirely across all push jobs. Resolved 2026-05-28 per user direction.
 
 - [ ] **Step 4: Run + commit**
 

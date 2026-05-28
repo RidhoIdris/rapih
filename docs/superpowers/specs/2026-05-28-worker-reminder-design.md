@@ -176,7 +176,7 @@ For each candidate, idempotency key:
 - `push:goal-due:{YYYYMMDD}:{goal_id}:H7`
 - `push:goal-due:{YYYYMMDD}:{goal_id}:H1`
 
-For each claim, fetch user's device tokens, build Expo message + write Notification row. Batch all messages, send via `expo-push.ts`, handle errors (see § 6).
+For each claim, fetch user's device tokens. **If the user has no device tokens, skip entirely — do NOT write a Notification row.** (Consistent with § 5.3: notifications only matter if the user can be reached.) Otherwise, build Expo message + write Notification row. Batch all messages, send via `expo-push.ts`, handle errors (see § 6).
 
 Copy templates (Bahasa Indonesia):
 - Recurring: title `"{name} jatuh tempo besok"`, body `"Bayar Rp {amount} besok"`.
