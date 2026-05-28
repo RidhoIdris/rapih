@@ -14,6 +14,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { ok } from '../lib/envelope.js';
 import { AppError } from '../lib/errors.js';
+import { getRedis } from '../lib/redis.js';
 import { getAiQueue } from '../producers/ai-queue.js';
 
 const Params = z.object({ id: z.string().min(1) });
@@ -187,6 +188,70 @@ export const tanyaRoutes: FastifyPluginAsyncZod = async (app) => {
       );
 
       return ok({ user_message: messageToDto(userMessage), job_id });
+    }
+  );
+
+  // ─── SSE bridge — forwards redis pubsub events to the client ─────────
+  app.get(
+    '/tanya/jobs/:job_id/stream',
+    {
+      schema: {
+        tags: ['tanya'],
+        summary: 'Stream live tokens for an in-flight Tanya completion job',
+        params: z.object({ job_id: z.string().min(1) }),
+        hide: true,
+      },
+      onRequest: [app.authenticate, app.requireOnboarding, app.requirePlus],
+    },
+    async (req, reply) => {
+      const { job_id } = req.params;
+
+      const job = await getAiQueue().getJob(job_id);
+      if (!job || (job.data as { user_id?: string }).user_id !== req.user.id) {
+        throw new AppError('tanya.job_not_found', 'Sesi streaming tidak ditemukan.', 404);
+      }
+
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      });
+
+      const sub = getRedis().duplicate();
+      const channel = `tanya:${job_id}`;
+      let closed = false;
+
+      const heartbeat = setInterval(() => {
+        if (!closed) reply.raw.write(': ping\n\n');
+      }, 15000);
+
+      const cleanup = () => {
+        if (closed) return;
+        closed = true;
+        clearInterval(heartbeat);
+        sub.removeAllListeners('message');
+        sub.unsubscribe(channel).catch(() => {});
+        sub.quit().catch(() => {});
+        reply.raw.end();
+      };
+
+      sub.on('message', (_ch, payload) => {
+        if (closed) return;
+        reply.raw.write(`data: ${payload}\n\n`);
+        try {
+          const event = JSON.parse(payload) as { type?: string };
+          if (event.type === 'done' || event.type === 'error') cleanup();
+        } catch {
+          // ignore non-JSON payloads (heartbeat etc); keep stream open
+        }
+      });
+
+      await sub.subscribe(channel);
+      req.raw.on('close', cleanup);
+
+      // Returning the reply tells Fastify we've taken over the response.
+      return reply;
     }
   );
 };

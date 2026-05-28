@@ -3,7 +3,12 @@ import { buildApp } from '../src/app.js';
 import { signAccessToken } from '../src/auth/tokens.js';
 import { getTestPrisma, resetTestDb } from './helpers/test-db.js';
 import './helpers/test-env.js';
-import { flushTestRedis, getTestAiQueue, teardownTestRedis } from './helpers/test-redis.js';
+import {
+  flushTestRedis,
+  getTestAiQueue,
+  getTestRedis,
+  teardownTestRedis,
+} from './helpers/test-redis.js';
 
 const prisma = getTestPrisma();
 
@@ -326,5 +331,106 @@ describe('tanya REST', () => {
     });
     expect(res.statusCode).toBe(403);
     expect(res.json().error.code).toBe('tier.upgrade_required');
+  });
+
+  // ─── SSE bridge ──────────────────────────────────────────────────────
+
+  async function enqueueJob(user_id: string): Promise<string> {
+    const queue = getTestAiQueue();
+    const job_id = `test-${Math.random().toString(36).slice(2)}`;
+    try {
+      await queue.add(
+        'tanya.chat-completion',
+        { user_id, session_id: 'sess', user_message_id: 'msg', job_id },
+        { jobId: job_id }
+      );
+    } finally {
+      await queue.close();
+    }
+    return job_id;
+  }
+
+  it('GET /tanya/jobs/:job_id/stream returns 401 without bearer', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/tanya/jobs/anything/stream',
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('GET /tanya/jobs/:job_id/stream returns 403 for Free user', async () => {
+    const { token } = await userWithToken({ tier: 'free' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/tanya/jobs/anything/stream',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('GET /tanya/jobs/:job_id/stream returns 404 for non-existent job', async () => {
+    const { token } = await userWithToken();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/tanya/jobs/does-not-exist/stream',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('tanya.job_not_found');
+  });
+
+  it("GET /tanya/jobs/:job_id/stream returns 404 for another user's job", async () => {
+    const other = await prisma.user.create({
+      data: {
+        email: 'tanya-sse-other@e.com',
+        name: 'Other',
+        tier: 'plus',
+        onboarding_completed_at: new Date(),
+      },
+    });
+    const job_id = await enqueueJob(other.id);
+    const { token } = await userWithToken();
+    const res = await app.inject({
+      method: 'GET',
+      url: `/tanya/jobs/${job_id}/stream`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('GET /tanya/jobs/:job_id/stream forwards pubsub events as SSE frames', async () => {
+    const { token, user } = await userWithToken();
+    const job_id = await enqueueJob(user.id);
+
+    const responsePromise = app.inject({
+      method: 'GET',
+      url: `/tanya/jobs/${job_id}/stream`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    // Give the handler a moment to subscribe to the redis channel.
+    await new Promise((r) => setTimeout(r, 150));
+
+    const pub = getTestRedis().duplicate();
+    try {
+      await pub.publish(
+        `tanya:${job_id}`,
+        JSON.stringify({ type: 'token', text: 'Halo!' })
+      );
+      await pub.publish(
+        `tanya:${job_id}`,
+        JSON.stringify({ type: 'done', message_id: 'final-id' })
+      );
+    } finally {
+      await pub.quit();
+    }
+
+    const res = await responsePromise;
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('text/event-stream');
+    expect(res.body).toContain('"type":"token"');
+    expect(res.body).toContain('Halo!');
+    expect(res.body).toContain('"type":"done"');
+    expect(res.body).toContain('final-id');
   });
 });
