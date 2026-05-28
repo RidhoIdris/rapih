@@ -379,8 +379,8 @@ Sub-project owner: which sub-project spec will design & implement this. See § 1
 | goals CRUD | domain-crud | Free | wallets | done |
 | assets CRUD | domain-crud | Plus | — | todo |
 | receipts (struk metadata) | domain-crud | Free | transactions | done |
-| tanya chat (AI) | ai-worker | Plus | api-foundation | todo |
-| tanya quota tracking | ai-worker | Plus | tanya | todo |
+| tanya chat (AI) | ai-worker | Plus | api-foundation | done |
+| tanya quota tracking | ai-worker | Plus | tanya | done |
 | scan-struk OCR | ai-worker | Plus | receipts | todo |
 | recurring auto-create (cron) | reminder-worker | Free | recurring | done |
 | due / goal push notif | reminder-worker | Free | device tokens | done |
