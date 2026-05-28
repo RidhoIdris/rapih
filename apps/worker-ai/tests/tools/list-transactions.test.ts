@@ -58,10 +58,7 @@ describe('list_transactions tool', () => {
     await seedExpense({ user_id: a.id, wallet_id: wa.id, amount: 100n });
     await seedExpense({ user_id: b.id, wallet_id: wb.id, amount: 999n });
 
-    const result = await listTransactionsTool.run(
-      {},
-      { userId: a.id, prisma }
-    );
+    const result = await listTransactionsTool.run({}, { userId: a.id, prisma });
     const { transactions } = result as { transactions: { amount: string }[] };
     expect(transactions).toHaveLength(1);
     expect(transactions[0]?.amount).toBe('100');
