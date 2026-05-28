@@ -34,7 +34,7 @@ export async function registerSwagger(app: FastifyInstance): Promise<void> {
         },
         {
           name: 'receipts',
-          description: 'Receipt (struk) metadata CRUD + multipart image upload.',
+          description: 'Receipt OCR scans: presigned upload, finalize, review, consume.',
         },
         { name: 'recurring', description: 'Recurring transaction (tagihan rutin) CRUD + pay.' },
         { name: 'tanya', description: 'Tanya AI chat (Plus) — sessions + messages + stream.' },

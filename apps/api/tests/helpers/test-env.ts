@@ -14,4 +14,9 @@ export function setTestEnv(): void {
   process.env.JWT_REFRESH_TTL_SECONDS ??= '2592000';
   process.env.GOOGLE_OAUTH_CLIENT_IDS ??= 'test.apps.googleusercontent.com';
   process.env.APPLE_OAUTH_CLIENT_IDS ??= 'app.rapih.ios';
+  process.env.R2_ACCOUNT_ID ??= 'test-account';
+  process.env.R2_ACCESS_KEY_ID ??= 'test-access-key';
+  process.env.R2_SECRET_ACCESS_KEY ??= 'test-secret-key';
+  process.env.R2_BUCKET ??= 'rapih-receipts-test';
+  process.env.R2_ENDPOINT ??= 'https://mock-r2.local';
 }

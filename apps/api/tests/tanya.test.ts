@@ -413,10 +413,7 @@ describe('tanya REST', () => {
 
     const pub = getTestRedis().duplicate();
     try {
-      await pub.publish(
-        `tanya:${job_id}`,
-        JSON.stringify({ type: 'token', text: 'Halo!' })
-      );
+      await pub.publish(`tanya:${job_id}`, JSON.stringify({ type: 'token', text: 'Halo!' }));
       await pub.publish(
         `tanya:${job_id}`,
         JSON.stringify({ type: 'done', message_id: 'final-id' })
