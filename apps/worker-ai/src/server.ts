@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import { loadEnv } from './config/env.js';
+import { handleOcrReceipt } from './handlers/ocr-receipt.js';
 import { handleTanyaChat } from './handlers/tanya-chat.js';
 import { logger } from './lib/logger.js';
 import { closePrisma } from './lib/prisma.js';
@@ -11,6 +12,7 @@ async function main(): Promise<void> {
   const env = loadEnv();
 
   registerHandler('tanya.chat-completion', handleTanyaChat);
+  registerHandler('ai.ocr-receipt', handleOcrReceipt);
 
   startWorker();
   logger.info('worker started');
