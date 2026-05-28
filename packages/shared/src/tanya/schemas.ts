@@ -63,8 +63,3 @@ export const SendMessageResponse = z.object({
   }),
 });
 export type SendMessageResponse = z.infer<typeof SendMessageResponse>;
-
-export const DeleteSessionResponse = z.object({
-  ok: z.literal(true),
-});
-export type DeleteSessionResponse = z.infer<typeof DeleteSessionResponse>;
