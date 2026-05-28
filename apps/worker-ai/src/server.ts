@@ -1,17 +1,16 @@
 import Fastify from 'fastify';
 import { loadEnv } from './config/env.js';
+import { handleTanyaChat } from './handlers/tanya-chat.js';
 import { logger } from './lib/logger.js';
 import { closePrisma } from './lib/prisma.js';
 import { closeRedis } from './lib/redis.js';
 import { closeAiQueue } from './queues/ai.js';
-import { startWorker, stopWorker } from './worker.js';
+import { registerHandler, startWorker, stopWorker } from './worker.js';
 
 async function main(): Promise<void> {
   const env = loadEnv();
 
-  // Handlers are registered in their respective modules; importing them here
-  // ensures the side-effect registration runs before the worker starts.
-  // (Future: import './handlers/tanya-chat.js' etc.)
+  registerHandler('tanya.chat-completion', handleTanyaChat);
 
   startWorker();
   logger.info('worker started');
