@@ -5,5 +5,7 @@ export const NotificationKindSchema = z.enum([
   'goal_deadline',
   'streak_nudge',
   'weekly_review',
+  'receipt_ready',
+  'receipt_failed',
 ]);
 export type NotificationKind = z.infer<typeof NotificationKindSchema>;
