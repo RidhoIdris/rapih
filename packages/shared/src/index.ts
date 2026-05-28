@@ -4,6 +4,7 @@ export * from './categories/index.js';
 export * from './devices/index.js';
 export * from './errors.js';
 export * from './goals/index.js';
+export * from './notifications/index.js';
 export * from './receipts/index.js';
 export * from './recurring/index.js';
 export * from './transactions/index.js';

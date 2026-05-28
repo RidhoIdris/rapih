@@ -14,6 +14,7 @@ export const ERROR_MESSAGES = {
   'category.not_found': 'Kategori tidak ditemukan.',
   'device.not_found': 'Perangkat tidak ditemukan.',
   'goal.not_found': 'Goal tidak ditemukan.',
+  'notification.not_found': 'Notifikasi tidak ditemukan.',
   'receipt.not_found': 'Struk tidak ditemukan.',
   'recurring.not_found': 'Tagihan rutin tidak ditemukan.',
   'transaction.not_found': 'Transaksi tidak ditemukan.',
