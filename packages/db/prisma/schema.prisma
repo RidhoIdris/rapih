@@ -91,6 +91,7 @@ model User {
   budgets                  Budget[]
   receipts                 Receipt[]
   device_tokens            DeviceToken[]
+  notifications            Notification[]
 
   @@map("users")
 }
@@ -323,4 +324,28 @@ model DeviceToken {
 
   @@index([user_id])
   @@map("device_tokens")
+}
+
+enum NotificationKind {
+  recurring_due
+  goal_deadline
+  streak_nudge
+  weekly_review
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  user_id    String
+  kind       NotificationKind
+  title      String
+  body       String
+  data       Json?
+  read_at    DateTime?
+  created_at DateTime         @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@index([user_id, read_at])
+  @@map("notifications")
 }
