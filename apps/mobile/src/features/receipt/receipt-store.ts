@@ -1,57 +1,94 @@
-import type { ReceiptDto, UpdateReceiptBody } from '@rapih/shared';
+import type { ConsumeBody, ReceiptScanDto, ReceiptScanSource } from '@rapih/shared';
 import { create } from 'zustand';
 import {
-  createReceipt as apiCreate,
-  deleteReceipt as apiDelete,
-  listReceipts as apiList,
-  updateReceipt as apiUpdate,
+  consumeScan,
+  createScan,
+  deleteScan,
+  finalizeScan,
+  getScan,
+  listScans,
+  uploadToR2,
 } from './api';
 
-type CreateReceiptOpts = Parameters<typeof apiCreate>[0];
+type CurrentScan = { image_url: string; scan: ReceiptScanDto };
 
 type ReceiptState = {
-  status: 'idle' | 'loading' | 'ready' | 'error';
+  current: CurrentScan | null;
   error: string | null;
-  receipts: ReceiptDto[];
+  scans: ReceiptScanDto[];
+  status: 'idle' | 'loading' | 'ready' | 'error';
 
-  fetch: () => Promise<void>;
-  create: (opts: CreateReceiptOpts) => Promise<ReceiptDto>;
-  update: (id: string, body: UpdateReceiptBody) => Promise<ReceiptDto>;
+  consume: (id: string, body: ConsumeBody) => Promise<string[]>;
+  loadScan: (id: string) => Promise<void>;
+  loadScans: () => Promise<void>;
   remove: (id: string) => Promise<void>;
+  startScan: (
+    fileUri: string,
+    source: ReceiptScanSource,
+    contentType: string,
+    sizeBytes: number
+  ) => Promise<string>;
 };
 
 export const useReceiptStore = create<ReceiptState>((set, get) => ({
-  status: 'idle',
+  current: null,
   error: null,
-  receipts: [],
+  scans: [],
+  status: 'idle',
 
-  fetch: async () => {
+  loadScans: async () => {
     set({ status: 'loading', error: null });
     try {
-      const receipts = await apiList();
-      set({ status: 'ready', receipts });
+      const scans = await listScans({ limit: 100 });
+      set({ status: 'ready', scans });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Gagal memuat struk.';
       set({ status: 'error', error: message });
     }
   },
 
-  create: async (opts) => {
-    const receipt = await apiCreate(opts);
-    set({ receipts: [receipt, ...get().receipts], status: 'ready' });
-    return receipt;
+  loadScan: async (id) => {
+    set({ status: 'loading', error: null });
+    try {
+      const current = await getScan(id);
+      set({ current, status: 'ready' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Gagal memuat detail struk.';
+      set({ status: 'error', error: message });
+    }
   },
 
-  update: async (id, body) => {
-    const updated = await apiUpdate(id, body);
-    set({
-      receipts: get().receipts.map((r) => (r.id === id ? updated : r)),
+  startScan: async (fileUri, source, contentType, sizeBytes) => {
+    const { scan, upload } = await createScan({
+      source,
+      content_type: contentType,
+      size_bytes: sizeBytes,
     });
-    return updated;
+    set({ scans: [scan, ...get().scans], status: 'ready' });
+    await uploadToR2(upload.url, upload.headers, fileUri);
+    const processing = await finalizeScan(scan.id);
+    set({ scans: get().scans.map((s) => (s.id === scan.id ? processing : s)) });
+    return processing.id;
+  },
+
+  consume: async (id, body) => {
+    const data = await consumeScan(id, body);
+    const current = get().current;
+    set({
+      current:
+        current?.scan.id === id
+          ? { ...current, scan: { ...current.scan, status: 'consumed' } }
+          : current,
+      scans: get().scans.map((s) => (s.id === id ? { ...s, status: 'consumed' } : s)),
+    });
+    return data.transaction_ids;
   },
 
   remove: async (id) => {
-    await apiDelete(id);
-    set({ receipts: get().receipts.filter((r) => r.id !== id) });
+    await deleteScan(id);
+    set({
+      current: get().current?.scan.id === id ? null : get().current,
+      scans: get().scans.filter((s) => s.id !== id),
+    });
   },
 }));

@@ -49,7 +49,18 @@
           "iosUrlScheme": "com.googleusercontent.apps.806008574126-0car974hcp809kn5u92h0a3idi4jrufa"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsImageWithMaxCount": 1
+          },
+          "androidIntentFilters": [
+            "image/*"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -25,6 +25,10 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Receipt Share Intent
+
+Scan-struk share intent uses `expo-share-intent`, so it requires an EAS development build or production build. It will not run inside Expo Go.
+
 ## Get a fresh project
 
 When you're ready, run:

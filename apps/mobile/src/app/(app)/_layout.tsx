@@ -1,10 +1,13 @@
 import { Stack } from 'expo-router';
 
+import { useReceiptShareIntent } from '@/features/receipt/share-intent';
 import { palette } from '@/theme';
 
 const TAB_SWAP = { animation: 'none' as const };
 
 export default function AppLayout() {
+  useReceiptShareIntent();
+
   return (
     <Stack
       screenOptions={{

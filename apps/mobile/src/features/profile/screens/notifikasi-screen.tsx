@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 
 import type { NotificationDto, NotificationKind } from '@rapih/shared';
 import { palette, tint } from '@/theme';
@@ -15,6 +15,8 @@ const KIND_TO_VARIANT: Record<NotificationKind, Variant> = {
   goal_deadline: 'goal',
   streak_nudge: 'streak',
   weekly_review: 'review',
+  receipt_ready: 'review',
+  receipt_failed: 'budget',
 };
 
 const TYPE_META: Record<Variant, { c: string; bg: string; emoji: string }> = {
@@ -170,6 +172,10 @@ export function NotifikasiScreen() {
                     onPress={() => {
                       haptics.tap();
                       if (isNew) markRead([n.id]);
+                      if (n.kind === 'receipt_ready' || n.kind === 'receipt_failed') {
+                        const scanId = (n.data as { scan_id?: string } | null)?.scan_id;
+                        if (scanId) router.push(`/(app)/receipts/${scanId}` as Href);
+                      }
                     }}
                     style={{
                       flexDirection: 'row',
