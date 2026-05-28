@@ -1,11 +1,13 @@
+import type { WalletKind } from '@rapih/shared';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Alert, Pressable, TextInput, View } from 'react-native';
 
-import { palette } from '@/theme';
-import { Caret, Screen, Text } from '@/components/ui';
 import { Icon } from '@/components/icons/icon';
+import { Screen, Text } from '@/components/ui';
+import { useWalletStore } from '@/features/wallet/wallet-store';
 import { haptics } from '@/lib/haptics';
+import { palette } from '@/theme';
 
 const ONDARK = palette.onDark;
 
@@ -14,10 +16,60 @@ function parseDigits(s: string): number {
   return d ? parseInt(d, 10) : 0;
 }
 
+const VALID_KINDS: WalletKind[] = ['bank', 'ewallet', 'cash', 'investment', 'other'];
+
+function asKind(value: unknown): WalletKind {
+  if (typeof value === 'string' && VALID_KINDS.includes(value as WalletKind)) {
+    return value as WalletKind;
+  }
+  return 'other';
+}
+
 export function TambahDompetDetailScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    kind?: string;
+    provider_name?: string;
+    sub?: string;
+    brand_color?: string;
+  }>();
+
+  const kind = asKind(params.kind);
+  const initialProviderName = params.provider_name ?? 'Lainnya';
+  const subtitleHint = params.sub ?? '';
+
+  const [name, setName] = useState(initialProviderName);
+  const [label, setLabel] = useState('');
   const [raw, setRaw] = useState('');
+  const [busy, setBusy] = useState(false);
   const balance = parseDigits(raw);
+
+  const create = useWalletStore((s) => s.create);
+
+  const onSave = async () => {
+    if (busy) return;
+    if (!name.trim()) {
+      Alert.alert('Nama dompet wajib diisi');
+      return;
+    }
+    setBusy(true);
+    try {
+      await create({
+        kind,
+        provider_name: name.trim(),
+        label: label.trim() || null,
+        initial_balance: String(balance),
+      });
+      haptics.success();
+      router.back();
+      router.back();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Gagal menyimpan dompet.';
+      Alert.alert('Gagal', message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <Screen background={palette.bg} bottomInset={28}>
@@ -67,8 +119,8 @@ export function TambahDompetDetailScreen() {
           variant="body"
           color={palette.inkSoft}
           style={{ fontSize: 12.5, lineHeight: 19, marginTop: 8 }}>
-          Catat saldo kamu sekarang. Setelah ini, semua transaksi yang kamu
-          catat yang ngeupdate angka ini.
+          Catat saldo kamu sekarang. Setelah ini, semua transaksi yang kamu catat yang
+          ngeupdate angka ini.
         </Text>
       </View>
 
@@ -93,15 +145,68 @@ export function TambahDompetDetailScreen() {
             borderRadius: 18,
             borderCurve: 'continuous',
             backgroundColor: palette.card,
-            flexDirection: 'row',
-            alignItems: 'center',
           }}>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder={initialProviderName}
+            placeholderTextColor={palette.inkMute}
+            maxLength={60}
+            style={{
+              fontSize: 15,
+              fontWeight: '500',
+              letterSpacing: -0.2,
+              color: palette.ink,
+              padding: 0,
+            }}
+          />
+        </View>
+        {subtitleHint ? (
           <Text
             variant="bodySm"
-            style={{ flex: 1, fontSize: 15, fontWeight: '500', letterSpacing: -0.2 }}>
-            BCA Tahapan
+            color={palette.inkMute}
+            style={{ fontSize: 11, marginTop: 6, paddingHorizontal: 4 }}>
+            {subtitleHint}
           </Text>
-          <Caret height={16} />
+        ) : null}
+      </View>
+
+      {/* label field (optional) */}
+      <View style={{ paddingHorizontal: 18, marginTop: 16 }}>
+        <Text
+          variant="label"
+          color={palette.inkMute}
+          style={{
+            fontSize: 11,
+            letterSpacing: 1.4,
+            fontWeight: '700',
+            paddingHorizontal: 4,
+            paddingBottom: 8,
+          }}>
+          Label (opsional)
+        </Text>
+        <View
+          style={{
+            paddingVertical: 14,
+            paddingHorizontal: 16,
+            borderRadius: 18,
+            borderCurve: 'continuous',
+            backgroundColor: palette.card,
+          }}>
+          <TextInput
+            value={label}
+            onChangeText={setLabel}
+            placeholder={'mis. "Tahapan ····432"'}
+            placeholderTextColor={palette.inkMute}
+            maxLength={60}
+            style={{
+              fontSize: 15,
+              fontWeight: '500',
+              letterSpacing: -0.2,
+              color: palette.ink,
+              padding: 0,
+            }}
+          />
         </View>
       </View>
 
@@ -130,14 +235,9 @@ export function TambahDompetDetailScreen() {
             alignItems: 'baseline',
             gap: 6,
             boxShadow:
-              balance > 0
-                ? `0 0 0 1.5px ${palette.moss}`
-                : `0 0 0 1px ${palette.inkFaint}`,
+              balance > 0 ? `0 0 0 1.5px ${palette.moss}` : `0 0 0 1px ${palette.inkFaint}`,
           }}>
-          <Text
-            variant="figureL"
-            color={palette.inkMute}
-            style={{ fontSize: 26, letterSpacing: -0.8 }}>
+          <Text variant="figureL" color={palette.inkMute} style={{ fontSize: 26, letterSpacing: -0.8 }}>
             Rp
           </Text>
           <TextInput
@@ -155,40 +255,6 @@ export function TambahDompetDetailScreen() {
               padding: 0,
             }}
           />
-        </View>
-      </View>
-
-      {/* date field */}
-      <View style={{ paddingHorizontal: 18, marginTop: 16 }}>
-        <Text
-          variant="label"
-          color={palette.inkMute}
-          style={{
-            fontSize: 11,
-            letterSpacing: 1.4,
-            fontWeight: '700',
-            paddingHorizontal: 4,
-            paddingBottom: 8,
-          }}>
-          Per tanggal
-        </Text>
-        <View
-          style={{
-            paddingVertical: 14,
-            paddingHorizontal: 16,
-            borderRadius: 18,
-            borderCurve: 'continuous',
-            backgroundColor: palette.card,
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}>
-          <Text style={{ fontSize: 16, marginRight: 10, lineHeight: 22 }}>📅</Text>
-          <Text
-            variant="bodySm"
-            style={{ flex: 1, fontSize: 14, fontWeight: '500' }}>
-            17 Mei 2026 · hari ini
-          </Text>
-          <Caret height={16} />
         </View>
       </View>
 
@@ -224,11 +290,8 @@ export function TambahDompetDetailScreen() {
       {/* CTA */}
       <View style={{ paddingHorizontal: 18, paddingTop: 14 }}>
         <Pressable
-          onPress={() => {
-            haptics.success();
-            router.back();
-            router.back();
-          }}
+          onPress={onSave}
+          disabled={busy}
           style={{
             height: 54,
             borderRadius: 27,
@@ -237,10 +300,11 @@ export function TambahDompetDetailScreen() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
+            opacity: busy ? 0.5 : 1,
           }}>
           <Icon name="check" size={14} color={ONDARK} />
           <Text variant="button" color={ONDARK} style={{ fontSize: 15 }}>
-            Simpan dompet
+            {busy ? 'Menyimpan…' : 'Simpan dompet'}
           </Text>
         </Pressable>
       </View>

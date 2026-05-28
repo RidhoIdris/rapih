@@ -78,6 +78,27 @@ This API uses **social-only sign-in** (Google + Apple). Email/password is intent
 - Test DB harness: `tests/helpers/test-db.ts` + `tests/helpers/test-env.ts` + `vitest.config.ts` `globalSetup`. Tests serialize against the same DB; `resetTestDb()` truncates user-data tables in `beforeEach`.
 - For tests that need to add routes before `ready()`, use `buildRawApp()` instead of `buildApp()`, register your routes, then call `await app.ready()`.
 
+## Adding a new domain CRUD resource
+
+Follow Spine § 5A (Domain CRUD Pattern) **exactly**. The canonical reference is `wallets`:
+
+- Schema: `packages/db/prisma/schema.prisma` → see `model Wallet`.
+- Shared types: `packages/shared/src/wallets/{enums,schemas,index}.ts`.
+- DTO mapper: `apps/api/src/lib/wallet-dto.ts`.
+- Route plugin: `apps/api/src/routes/wallets.ts`.
+- Tests: `apps/api/tests/wallets.test.ts` (12 tests covering all required cases).
+
+Money over the wire = numeric **string** (negative allowed for liabilities). Convert with `BigInt(s)` server-side, never trust `Number()` for money.
+
+When adding a new resource:
+1. Migrate Prisma schema (run `migrate dev --name add_{resources} --create-only` to inspect SQL first).
+2. Apply to dev + test DBs (`migrate deploy` against both).
+3. Add shared types, register barrel in `packages/shared/src/index.ts`.
+4. Add error code(s) to `packages/shared/src/errors.ts` (e.g. `wallet.not_found`).
+5. Add Swagger tag in `apps/api/src/plugins/swagger.ts`.
+6. Build `@rapih/shared` (`pnpm --filter @rapih/shared build`) so downstream consumers see the types.
+7. Write the route + tests + run `pnpm --filter @rapih/api test {resources}`.
+
 ## Adding deps
 
 - Runtime deps go in `dependencies`. Dev-only (test, lint, tsx, types) go in `devDependencies`.

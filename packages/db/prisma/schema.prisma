@@ -37,6 +37,37 @@ enum PrimaryGoal {
   bills
 }
 
+enum WalletKind {
+  bank
+  ewallet
+  cash
+  investment
+  other
+}
+
+enum CategoryKind {
+  expense
+  income
+}
+
+enum TransactionKind {
+  expense
+  income
+  transfer
+}
+
+enum RecurringPeriod {
+  daily
+  weekly
+  monthly
+  yearly
+}
+
+enum DevicePlatform {
+  ios
+  android
+}
+
 model User {
   id                       String    @id @default(cuid())
   email                    String    @unique
@@ -52,6 +83,14 @@ model User {
   social_accounts          SocialAccount[]
   refresh_tokens           RefreshToken[]
   profile                  UserProfile?
+  wallets                  Wallet[]
+  categories               Category[]
+  transactions             Transaction[]
+  goals                    Goal[]
+  recurring_transactions   RecurringTransaction[]
+  budgets                  Budget[]
+  receipts                 Receipt[]
+  device_tokens            DeviceToken[]
 
   @@map("users")
 }
@@ -100,4 +139,188 @@ model UserProfile {
   user           User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
+}
+
+model Wallet {
+  id              String     @id @default(cuid())
+  user_id         String
+  kind            WalletKind
+  provider_name   String
+  label           String?
+  initial_balance BigInt     @default(0)
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+  deleted_at      DateTime?
+
+  user                User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions        Transaction[] @relation("TransactionWallet")
+  transfers_received  Transaction[] @relation("TransactionToWallet")
+  goals               Goal[]
+  recurring_transactions RecurringTransaction[]
+
+  @@index([user_id, deleted_at])
+  @@map("wallets")
+}
+
+model Category {
+  id         String       @id @default(cuid())
+  user_id    String?
+  kind       CategoryKind
+  name       String
+  color      String
+  icon       String
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+  deleted_at DateTime?
+
+  user                   User?                  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions           Transaction[]
+  recurring_transactions RecurringTransaction[]
+  budget_categories      BudgetCategory[]
+
+  @@index([user_id, deleted_at])
+  @@map("categories")
+}
+
+model Transaction {
+  id            String          @id @default(cuid())
+  user_id       String
+  kind          TransactionKind
+  wallet_id     String
+  to_wallet_id  String?
+  category_id   String?
+  receipt_id    String?
+  amount        BigInt
+  note          String?
+  transacted_at DateTime
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  deleted_at    DateTime?
+
+  user          User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  wallet        Wallet          @relation("TransactionWallet", fields: [wallet_id], references: [id])
+  to_wallet     Wallet?         @relation("TransactionToWallet", fields: [to_wallet_id], references: [id])
+  category      Category?       @relation(fields: [category_id], references: [id])
+  receipt       Receipt?        @relation(fields: [receipt_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, deleted_at])
+  @@index([wallet_id])
+  @@index([to_wallet_id])
+  @@index([category_id])
+  @@index([receipt_id])
+  @@index([transacted_at])
+  @@map("transactions")
+}
+
+model Goal {
+  id            String    @id @default(cuid())
+  user_id       String
+  name          String
+  icon          String
+  color         String
+  target_amount BigInt
+  saved_amount  BigInt    @default(0)
+  deadline      DateTime?
+  wallet_id     String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  wallet        Wallet?   @relation(fields: [wallet_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, deleted_at])
+  @@index([wallet_id])
+  @@map("goals")
+}
+
+model RecurringTransaction {
+  id            String          @id @default(cuid())
+  user_id       String
+  wallet_id     String
+  category_id   String?
+  kind          TransactionKind
+  amount        BigInt
+  note          String?
+  name          String
+  icon          String
+  color         String
+  period        RecurringPeriod
+  next_due_date DateTime
+  last_paid_at  DateTime?
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  deleted_at    DateTime?
+
+  user     User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  wallet   Wallet    @relation(fields: [wallet_id], references: [id], onDelete: Restrict)
+  category Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, deleted_at])
+  @@index([wallet_id])
+  @@index([next_due_date])
+  @@map("recurring_transactions")
+}
+
+model Budget {
+  id         String   @id @default(cuid())
+  user_id    String
+  name       String
+  icon       String
+  color      String
+  amount     BigInt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+
+  user              User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  budget_categories BudgetCategory[]
+
+  @@index([user_id, deleted_at])
+  @@map("budgets")
+}
+
+model BudgetCategory {
+  budget_id   String
+  category_id String
+
+  budget   Budget   @relation(fields: [budget_id], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@id([budget_id, category_id])
+  @@index([category_id])
+  @@map("budget_categories")
+}
+
+model Receipt {
+  id            String    @id @default(cuid())
+  user_id       String
+  image_url     String?
+  merchant_name String?
+  total_amount  BigInt?
+  scanned_at    DateTime
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+
+  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([user_id, deleted_at])
+  @@map("receipts")
+}
+
+model DeviceToken {
+  id         String         @id @default(cuid())
+  user_id    String
+  token      String         @unique
+  platform   DevicePlatform
+  label      String?
+  created_at DateTime       @default(now())
+  updated_at DateTime       @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("device_tokens")
 }
