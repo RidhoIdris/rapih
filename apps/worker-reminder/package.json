@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "lint": "biome check src tests",
     "check": "tsc --noEmit && biome check src tests",
-    "test": "vitest run"
+    "test": "vitest run --fileParallelism=false"
   },
   "dependencies": {
     "@rapih/db": "workspace:*",
