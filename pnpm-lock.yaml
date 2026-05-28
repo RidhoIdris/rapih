@@ -47,6 +47,9 @@ importers:
       '@rapih/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      bullmq:
+        specifier: ^5.77.6
+        version: 5.77.6
       dotenv:
         specifier: ^16.4.5
         version: 16.4.7
@@ -59,6 +62,9 @@ importers:
       fastify-type-provider-zod:
         specifier: ^4.0.2
         version: 4.0.2(fastify@5.8.5)(zod@3.25.76)
+      ioredis:
+        specifier: 5.10.1
+        version: 5.10.1
       jose:
         specifier: ^5.9.6
         version: 5.10.0
@@ -8649,7 +8655,7 @@ snapshots:
       fs-extra: 10.1.0
       http-call: 5.3.0
       semver: 7.8.0
-      tslib: 2.6.2
+      tslib: 2.8.1
     transitivePeerDependencies:
       - '@swc/core'
       - '@swc/wasm'
@@ -12057,7 +12063,7 @@ snapshots:
   graphql-tag@2.12.6(graphql@16.8.1):
     dependencies:
       graphql: 16.8.1
-      tslib: 2.6.2
+      tslib: 2.8.1
 
   graphql@16.8.1: {}
 

@@ -12,6 +12,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     authenticate: (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
     requireOnboarding: (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    requirePlus: (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 
@@ -46,8 +47,18 @@ const authDecorators: FastifyPluginAsync = async (app: FastifyInstance) => {
     }
   };
 
+  const requirePlus = async (req: FastifyRequest, _reply: FastifyReply) => {
+    if (!req.user) {
+      throw new AppError('auth.unauthorized', 'Anda harus masuk dulu.', 401);
+    }
+    if (req.user.tier === 'free') {
+      throw new AppError('tier.upgrade_required', 'Fitur ini butuh Rapih Plus.', 403);
+    }
+  };
+
   app.decorate('authenticate', authenticate);
   app.decorate('requireOnboarding', requireOnboarding);
+  app.decorate('requirePlus', requirePlus);
 };
 
 export default fp(authDecorators, { name: 'auth-decorators', dependencies: ['db'] });
