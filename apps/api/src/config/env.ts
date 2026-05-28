@@ -19,6 +19,7 @@ const EnvSchema = z.object({
   API_PUBLIC_URL: z.string().url(),
 
   DATABASE_URL: z.string().url(),
+  REDIS_URL: z.string().url(),
 
   JWT_ACCESS_SECRET: z.string().min(32, 'must be at least 32 chars'),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),

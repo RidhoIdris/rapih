@@ -92,6 +92,8 @@ model User {
   receipts                 Receipt[]
   device_tokens            DeviceToken[]
   notifications            Notification[]
+  ai_sessions              AiSession[]
+  ai_usage_logs            AiUsageLog[]
 
   @@map("users")
 }
@@ -348,4 +350,65 @@ model Notification {
   @@index([user_id, created_at])
   @@index([user_id, read_at])
   @@map("notifications")
+}
+
+enum AiRole {
+  user
+  assistant
+  tool
+}
+
+enum AiUsageKind {
+  chat
+  ocr
+  weekly_review
+}
+
+model AiSession {
+  id              String    @id @default(cuid())
+  user_id         String
+  title           String    @default("")
+  created_at      DateTime  @default(now())
+  last_message_at DateTime  @default(now())
+  deleted_at      DateTime?
+
+  user     User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+
+  @@index([user_id, deleted_at, last_message_at])
+  @@map("ai_sessions")
+}
+
+model AiMessage {
+  id          String   @id @default(cuid())
+  session_id  String
+  role        AiRole
+  content     String
+  tool_name   String?
+  tool_args   Json?
+  tool_result Json?
+  created_at  DateTime @default(now())
+
+  session AiSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@index([session_id, created_at])
+  @@map("ai_messages")
+}
+
+model AiUsageLog {
+  id                String      @id @default(cuid())
+  user_id           String
+  session_id        String?
+  kind              AiUsageKind
+  model             String
+  prompt_tokens     Int
+  completion_tokens Int
+  total_tokens      Int
+  cost_usd          Decimal     @db.Decimal(10, 6)
+  created_at        DateTime    @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("ai_usage_logs")
 }

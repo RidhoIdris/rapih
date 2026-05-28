@@ -9,6 +9,7 @@ import { meRoutes } from './me.js';
 import { notificationsRoutes } from './notifications.js';
 import { receiptsRoutes } from './receipts.js';
 import { recurringRoutes } from './recurring.js';
+import { tanyaRoutes } from './tanya.js';
 import { transactionsRoutes } from './transactions.js';
 import { walletsRoutes } from './wallets.js';
 
@@ -25,4 +26,5 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await app.register(receiptsRoutes);
   await app.register(devicesRoutes);
   await app.register(notificationsRoutes);
+  await app.register(tanyaRoutes);
 }

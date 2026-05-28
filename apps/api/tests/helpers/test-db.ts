@@ -22,7 +22,7 @@ export async function resetTestDb(): Promise<void> {
   // Include "categories" explicitly so CASCADE doesn't leave system categories
   // in an unknown state. Re-seed them afterwards.
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE "refresh_tokens", "notifications", "social_accounts", "user_profiles", "device_tokens", "transactions", "recurring_transactions", "goals", "budget_categories", "budgets", "receipts", "wallets", "categories", "users" RESTART IDENTITY CASCADE'
+    'TRUNCATE TABLE "ai_messages", "ai_sessions", "ai_usage_logs", "refresh_tokens", "notifications", "social_accounts", "user_profiles", "device_tokens", "transactions", "recurring_transactions", "goals", "budget_categories", "budgets", "receipts", "wallets", "categories", "users" RESTART IDENTITY CASCADE'
   );
   await seedSystemCategories(prisma);
 }
