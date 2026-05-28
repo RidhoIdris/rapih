@@ -1,4 +1,5 @@
 import {
+  advanceDueDate,
   CreateRecurringBody,
   RecurringListResponse,
   RecurringResponse,
@@ -11,15 +12,6 @@ import { AppError } from '../lib/errors.js';
 import { recurringToDto } from '../lib/recurring-dto.js';
 
 const ParamsId = z.object({ id: z.string().min(1) });
-
-function advanceDueDate(current: Date, period: string): Date {
-  const d = new Date(current);
-  if (period === 'daily') d.setDate(d.getDate() + 1);
-  else if (period === 'weekly') d.setDate(d.getDate() + 7);
-  else if (period === 'monthly') d.setMonth(d.getMonth() + 1);
-  else if (period === 'yearly') d.setFullYear(d.getFullYear() + 1);
-  return d;
-}
 
 export const recurringRoutes: FastifyPluginAsyncZod = async (app) => {
   // ─── List ──────────────────────────────────────────────────────────────

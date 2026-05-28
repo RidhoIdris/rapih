@@ -29,6 +29,10 @@ export async function registerSwagger(app: FastifyInstance): Promise<void> {
         { name: 'devices', description: 'Push notification device token registration.' },
         { name: 'goals', description: 'Goal (tabungan tujuan) CRUD.' },
         {
+          name: 'notifications',
+          description: 'In-app notification feed (list + mark-read).',
+        },
+        {
           name: 'receipts',
           description: 'Receipt (struk) metadata CRUD + multipart image upload.',
         },
