@@ -11,7 +11,10 @@ const MoneyString = z
     }
   }, 'must be greater than 0');
 
-const HexColor = z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, 'must be a 6-digit hex color');
+const HexColor = z
+  .string()
+  .trim()
+  .regex(/^#[0-9A-Fa-f]{6}$/, 'must be a 6-digit hex color');
 
 // ─── Request bodies ───────────────────────────────────────────────────────
 
