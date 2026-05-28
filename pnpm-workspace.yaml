@@ -6,6 +6,7 @@ allowBuilds:
   '@prisma/engines': true
   dtrace-provider: true
   esbuild: true
+  msgpackr-extract: false
   prisma: true
   unrs-resolver: true
 minimumReleaseAgeExclude:
