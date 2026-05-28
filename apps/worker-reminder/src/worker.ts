@@ -1,5 +1,7 @@
 import { type Job, Worker } from 'bullmq';
 import { runDuePush } from './jobs/due-push.js';
+import { handleReceiptsFailedPush } from './jobs/receipts-failed-push.js';
+import { handleReceiptsReadyPush } from './jobs/receipts-ready-push.js';
 import { runRecurringCreate } from './jobs/recurring-create.js';
 import { runStreakNudge } from './jobs/streak-nudge.js';
 import { runWeeklyReview } from './jobs/weekly-review.js';
@@ -17,6 +19,10 @@ async function dispatch(job: Job): Promise<unknown> {
       return runStreakNudge();
     case 'weekly-review':
       return runWeeklyReview();
+    case 'receipts.ready-push':
+      return handleReceiptsReadyPush(job);
+    case 'receipts.failed-push':
+      return handleReceiptsFailedPush(job);
     default:
       logger.warn({ job: job.name }, 'unknown job name');
       return null;
