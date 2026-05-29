@@ -67,7 +67,11 @@ export function TabBar({ active, onTab }: Props) {
     }
     if (id === active) return;
     const to = ROUTES[id];
-    if (to) router.replace(to);
+    if (!to) return;
+    // Tanya is a full-screen chat with no TabBar of its own — push it so it
+    // keeps a back stack (button + iOS swipe-back). Other tabs swap in place.
+    if (id === 'tanya') router.push(to);
+    else router.replace(to);
   };
 
   return (
