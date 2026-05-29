@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "./scripts/dev.sh",
     "dev:api": "pnpm --filter @rapih/api dev",
+    "dev:worker-ai": "pnpm --filter @rapih/worker-ai dev",
+    "dev:worker-reminder": "pnpm --filter @rapih/worker-reminder dev",
     "dev:mobile": "pnpm --filter @rapih/mobile start",
     "dev:ios": "pnpm --filter @rapih/mobile ios",
     "dev:android": "pnpm --filter @rapih/mobile android",

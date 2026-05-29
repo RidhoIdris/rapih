@@ -15,7 +15,8 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.806008574126-0car974hcp809kn5u92h0a3idi4jrufa"
+              "com.googleusercontent.apps.806008574126-0car974hcp809kn5u92h0a3idi4jrufa",
+              "mobile"
             ]
           }
         ]
@@ -60,7 +61,17 @@
             "image/*"
           ]
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ],
+      "expo-font",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
