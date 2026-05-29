@@ -15,6 +15,9 @@ export function recurringToDto(row: RecurringTransaction): RecurringDto {
     period: row.period,
     next_due_date: row.next_due_date.toISOString(),
     last_paid_at: row.last_paid_at?.toISOString() ?? null,
+    total_occurrences: row.total_occurrences ?? null,
+    occurrences_paid: row.occurrences_paid,
+    is_complete: row.total_occurrences != null && row.occurrences_paid >= row.total_occurrences,
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
   };

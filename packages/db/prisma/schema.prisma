@@ -255,6 +255,9 @@ model RecurringTransaction {
   period        RecurringPeriod
   next_due_date DateTime
   last_paid_at  DateTime?
+  // Installment tracking: total_occurrences set = finite "cicilan"; null = open-ended.
+  total_occurrences Int?
+  occurrences_paid  Int           @default(0)
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
   deleted_at    DateTime?

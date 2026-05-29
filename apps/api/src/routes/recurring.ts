@@ -82,6 +82,8 @@ export const recurringRoutes: FastifyPluginAsyncZod = async (app) => {
           color: body.color,
           period: body.period,
           next_due_date: new Date(body.next_due_date),
+          total_occurrences: body.total_occurrences ?? null,
+          occurrences_paid: body.occurrences_paid ?? 0,
         },
       });
       return ok({ recurring: recurringToDto(row) });
@@ -169,6 +171,8 @@ export const recurringRoutes: FastifyPluginAsyncZod = async (app) => {
           period: body.period,
           next_due_date:
             body.next_due_date !== undefined ? new Date(body.next_due_date) : undefined,
+          total_occurrences: body.total_occurrences,
+          occurrences_paid: body.occurrences_paid,
         },
       });
       return ok({ recurring: recurringToDto(updated) });
@@ -221,8 +225,22 @@ export const recurringRoutes: FastifyPluginAsyncZod = async (app) => {
         throw new AppError('recurring.not_found', 'Tagihan rutin tidak ditemukan.', 404);
       }
 
+      // Finite installment that's already fully paid → nothing left to pay.
+      if (
+        existing.total_occurrences != null &&
+        existing.occurrences_paid >= existing.total_occurrences
+      ) {
+        throw new AppError('recurring.completed', 'Cicilan ini sudah lunas.', 409);
+      }
+
       const now = new Date();
-      const nextDue = advanceDueDate(existing.next_due_date, existing.period);
+      const paidAfter = existing.occurrences_paid + 1;
+      const willComplete =
+        existing.total_occurrences != null && paidAfter >= existing.total_occurrences;
+      // Don't roll the due date past the final installment.
+      const nextDue = willComplete
+        ? existing.next_due_date
+        : advanceDueDate(existing.next_due_date, existing.period);
 
       const [, updated] = await app.db.$transaction([
         app.db.transaction.create({
@@ -238,7 +256,7 @@ export const recurringRoutes: FastifyPluginAsyncZod = async (app) => {
         }),
         app.db.recurringTransaction.update({
           where: { id: existing.id },
-          data: { last_paid_at: now, next_due_date: nextDue },
+          data: { last_paid_at: now, next_due_date: nextDue, occurrences_paid: paidAfter },
         }),
       ]);
 

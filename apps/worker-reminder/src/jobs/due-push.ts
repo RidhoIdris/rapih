@@ -38,6 +38,11 @@ export async function runDuePush(
     include: { user: { include: { device_tokens: true } } },
   });
   for (const r of recurringDue) {
+    // Finite installment already fully paid → no reminder.
+    if (r.total_occurrences != null && r.occurrences_paid >= r.total_occurrences) {
+      skipped++;
+      continue;
+    }
     if (r.user.device_tokens.length === 0) {
       skipped++;
       continue;

@@ -24,11 +24,20 @@ export async function runRecurringCreate(now: Date = new Date()): Promise<{
   let skipped = 0;
 
   for (const r of due) {
+    // Finite installment already fully paid → stop auto-creating.
+    if (r.total_occurrences != null && r.occurrences_paid >= r.total_occurrences) {
+      skipped++;
+      continue;
+    }
+
     const key = `recurring-create:${ymdUtc(now)}:${r.id}`;
     if (!(await claim(key, TTL))) {
       skipped++;
       continue;
     }
+
+    const paidAfter = r.occurrences_paid + 1;
+    const willComplete = r.total_occurrences != null && paidAfter >= r.total_occurrences;
 
     try {
       await prisma.$transaction([
@@ -47,7 +56,11 @@ export async function runRecurringCreate(now: Date = new Date()): Promise<{
           where: { id: r.id },
           data: {
             last_paid_at: now,
-            next_due_date: advanceDueDate(r.next_due_date, r.period),
+            // Don't roll past the final installment; the guard above skips it next run.
+            next_due_date: willComplete
+              ? r.next_due_date
+              : advanceDueDate(r.next_due_date, r.period),
+            occurrences_paid: paidAfter,
           },
         }),
       ]);

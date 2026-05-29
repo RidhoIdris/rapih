@@ -35,6 +35,10 @@ export const CreateRecurringBody = z.object({
   note: z.string().trim().max(500).nullable().optional(),
   period: RecurringPeriodSchema,
   next_due_date: z.string().datetime({ offset: true }),
+  /** Set = finite installment ("cicilan"); omit/null = open-ended recurring. */
+  total_occurrences: z.number().int().positive().nullable().optional(),
+  /** How many installments already paid before this bill was added. */
+  occurrences_paid: z.number().int().min(0).optional(),
 });
 export type CreateRecurringBody = z.infer<typeof CreateRecurringBody>;
 
@@ -49,6 +53,8 @@ export const UpdateRecurringBody = z
     note: z.string().trim().max(500).nullable().optional(),
     period: RecurringPeriodSchema.optional(),
     next_due_date: z.string().datetime({ offset: true }).optional(),
+    total_occurrences: z.number().int().positive().nullable().optional(),
+    occurrences_paid: z.number().int().min(0).optional(),
   })
   .refine((obj) => Object.keys(obj).length > 0, { message: 'at least one field required' });
 export type UpdateRecurringBody = z.infer<typeof UpdateRecurringBody>;
@@ -68,6 +74,11 @@ export const RecurringDto = z.object({
   period: RecurringPeriodSchema,
   next_due_date: z.string(),
   last_paid_at: z.string().nullable(),
+  /** Total installments for a finite "cicilan"; null for open-ended recurring. */
+  total_occurrences: z.number().int().nullable(),
+  occurrences_paid: z.number().int(),
+  /** True once a finite installment has been fully paid off. */
+  is_complete: z.boolean(),
   created_at: z.string(),
   updated_at: z.string(),
 });
