@@ -1,20 +1,18 @@
-import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { transactionKindLabel, type TransactionDto } from '@rapih/shared';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
-import { palette, tint } from '@/theme';
-import { Screen, Text } from '@/components/ui';
 import { Icon, type IconName } from '@/components/icons/icon';
+import { Screen, Text } from '@/components/ui';
+import { getTransaction } from '@/features/activity/api';
+import { useTransactionStore } from '@/features/activity/transaction-store';
+import { fullDateLabel, signedAmount } from '@/features/activity/display';
+import { useCategoryStore } from '@/features/category/category-store';
+import { useWalletStore } from '@/features/wallet/wallet-store';
 import { haptics } from '@/lib/haptics';
-
-const ONDARK = palette.onDark;
-
-const ROWS: [string, string][] = [
-  ['Dompet', 'GoPay · ····8821'],
-  ['Status', 'Selesai · diverifikasi'],
-  ['Order ID', 'GF-238190-MX2'],
-  ['Lokasi', 'Mie Gacoan, Bekasi'],
-  ['Item', '2× Mie Gacoan Lv 3 + Es Teh'],
-];
+import { rupiah } from '@/lib/money';
+import { palette } from '@/theme';
 
 function HeaderBtn({ name, onPress }: { name: IconName; onPress: () => void }) {
   return (
@@ -35,6 +33,109 @@ function HeaderBtn({ name, onPress }: { name: IconName; onPress: () => void }) {
 
 export function TransaksiDetailScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+
+  const fromStore = useTransactionStore((s) => (id ? s.items.find((t) => t.id === id) : undefined));
+  const remove = useTransactionStore((s) => s.remove);
+  const categories = useCategoryStore((s) => s.items);
+  const fetchCategories = useCategoryStore((s) => s.fetch);
+  const wallets = useWalletStore((s) => s.wallets);
+  const fetchWallets = useWalletStore((s) => s.fetch);
+
+  const [fetched, setFetched] = useState<TransactionDto | null>(null);
+  const [busy, setBusy] = useState(false);
+  const tx = fromStore ?? fetched;
+
+  // Deep-link fallback: fetch the single transaction if it isn't in the store.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on id only
+  useEffect(() => {
+    if (categories.length === 0) void fetchCategories();
+    if (wallets.length === 0) void fetchWallets();
+    if (id && !fromStore) {
+      getTransaction(id)
+        .then(setFetched)
+        .catch(() => setFetched(null));
+    }
+  }, [id]);
+
+  const category = useMemo(
+    () => (tx?.category_id ? categories.find((c) => c.id === tx.category_id) : undefined),
+    [tx?.category_id, categories],
+  );
+  const wallet = useMemo(
+    () => (tx ? wallets.find((w) => w.id === tx.wallet_id) : undefined),
+    [tx, wallets],
+  );
+  const toWallet = useMemo(
+    () => (tx?.to_wallet_id ? wallets.find((w) => w.id === tx.to_wallet_id) : undefined),
+    [tx?.to_wallet_id, wallets],
+  );
+
+  const onDelete = () => {
+    if (!tx) return;
+    Alert.alert('Hapus transaksi?', 'Transaksi ini akan dihapus permanen.', [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Hapus',
+        style: 'destructive',
+        onPress: async () => {
+          if (busy) return;
+          setBusy(true);
+          try {
+            await remove(tx.id);
+            haptics.success();
+            router.back();
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Gagal menghapus transaksi.';
+            Alert.alert('Gagal', message);
+            setBusy(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  if (!tx) {
+    return (
+      <Screen background={palette.bg} bottomInset={28}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 22,
+          }}>
+          <HeaderBtn
+            name="chevronLeft"
+            onPress={() => {
+              haptics.tap();
+              router.back();
+            }}
+          />
+          <Text variant="bodySm" style={{ fontSize: 12, fontWeight: '600' }}>
+            Detail Transaksi
+          </Text>
+          <View style={{ width: 38 }} />
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={palette.moss} />
+        </View>
+      </Screen>
+    );
+  }
+
+  const title = tx.note?.trim() || category?.name || transactionKindLabel[tx.kind];
+  const heroColor = category?.color ?? palette.moss;
+  const amt = signedAmount(tx);
+  const badge = [transactionKindLabel[tx.kind], category?.name].filter(Boolean).join(' · ');
+
+  const rows: [string, string][] = [
+    ['Dompet', wallet?.provider_name ?? '—'],
+    ...(toWallet ? ([['Ke dompet', toWallet.provider_name]] as [string, string][]) : []),
+    ['Kategori', category?.name ?? 'Tanpa kategori'],
+    ['Tanggal', fullDateLabel(tx.transacted_at)],
+    ['Catatan', tx.note?.trim() || '—'],
+  ];
 
   return (
     <Screen background={palette.bg} bottomInset={28}>
@@ -56,7 +157,7 @@ export function TransaksiDetailScreen() {
         <Text variant="bodySm" style={{ fontSize: 12, fontWeight: '600' }}>
           Detail Transaksi
         </Text>
-        <HeaderBtn name="more" onPress={() => haptics.tap()} />
+        <HeaderBtn name="more" onPress={onDelete} />
       </View>
 
       {/* hero */}
@@ -67,22 +168,28 @@ export function TransaksiDetailScreen() {
             height: 64,
             borderRadius: 20,
             borderCurve: 'continuous',
-            backgroundColor: tint.amber,
+            backgroundColor: heroColor,
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-          <Text variant="bodySm" color={tint.goldInk} style={{ fontSize: 22, fontWeight: '700' }}>
-            G
+          <Text variant="bodySm" color="#fff" style={{ fontSize: 22, fontWeight: '700' }}>
+            {title.trim()[0]?.toUpperCase() ?? '?'}
           </Text>
         </View>
-        <Text variant="figureS" style={{ fontSize: 22, letterSpacing: -0.5, marginTop: 12 }}>
-          Gojek · GoFood
+        <Text
+          variant="figureS"
+          numberOfLines={2}
+          style={{ fontSize: 22, letterSpacing: -0.5, marginTop: 12, textAlign: 'center' }}>
+          {title}
         </Text>
         <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 11.5, marginTop: 4 }}>
-          17 Mei 2026 · 09:14 WIB
+          {fullDateLabel(tx.transacted_at)}
         </Text>
-        <Text variant="figureXL" style={{ fontSize: 54, letterSpacing: -2.4, lineHeight: 56, marginTop: 18 }}>
-          −Rp 68.000
+        <Text
+          variant="figureXL"
+          color={amt > 0 ? palette.cool : palette.ink}
+          style={{ fontSize: 54, letterSpacing: -2.4, lineHeight: 56, marginTop: 18 }}>
+          {rupiah(amt)}
         </Text>
         <View
           style={{
@@ -90,10 +197,10 @@ export function TransaksiDetailScreen() {
             paddingVertical: 6,
             paddingHorizontal: 12,
             borderRadius: 999,
-            backgroundColor: tint.amber,
+            backgroundColor: palette.sand,
           }}>
-          <Text variant="chip" color={tint.amberInk} style={{ fontSize: 12, fontWeight: '600' }}>
-            Senang-Senang · Makan luar
+          <Text variant="chip" color={palette.ink} style={{ fontSize: 12, fontWeight: '600' }}>
+            {badge}
           </Text>
         </View>
       </View>
@@ -107,114 +214,54 @@ export function TransaksiDetailScreen() {
           borderRadius: 22,
           borderCurve: 'continuous',
         }}>
-        {ROWS.map((r, i) => (
+        {rows.map((r, i) => (
           <View
             key={r[0]}
             style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
+              gap: 16,
               paddingVertical: 14,
               paddingHorizontal: 18,
-              borderBottomWidth: i < ROWS.length - 1 ? 1 : 0,
+              borderBottomWidth: i < rows.length - 1 ? 1 : 0,
               borderBottomColor: palette.inkFaint,
             }}>
-            <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 12, fontWeight: '500' }}>
+            <Text
+              variant="bodySm"
+              color={palette.inkMute}
+              style={{ fontSize: 12, fontWeight: '500' }}>
               {r[0]}
             </Text>
             <Text
               variant="bodySm"
-              style={{ fontSize: 13, fontWeight: '500', textAlign: 'right', maxWidth: 220 }}>
+              style={{ flex: 1, fontSize: 13, fontWeight: '500', textAlign: 'right' }}>
               {r[1]}
             </Text>
           </View>
         ))}
       </View>
 
-      {/* notes & receipt */}
-      <View style={{ marginHorizontal: 18, marginTop: 14, flexDirection: 'row', gap: 10 }}>
-        {([
-          { l: 'Tambah catatan', i: 'doc' as IconName },
-          { l: 'Foto struk', i: 'image' as IconName },
-        ]).map((b) => (
-          <Pressable
-            key={b.l}
-            onPress={() => haptics.tap()}
-            style={{
-              flex: 1,
-              height: 48,
-              borderRadius: 16,
-              borderCurve: 'continuous',
-              backgroundColor: palette.card,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}>
-            <Icon name={b.i} size={14} color={palette.ink} />
-            <Text variant="bodySm" style={{ fontSize: 13, fontWeight: '600' }}>
-              {b.l}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <View style={{ flex: 1, minHeight: 24 }} />
 
-      {/* AI insight */}
-      <View
-        style={{
-          marginHorizontal: 18,
-          marginTop: 14,
-          paddingVertical: 14,
-          paddingHorizontal: 16,
-          borderRadius: 20,
-          borderCurve: 'continuous',
-          backgroundColor: palette.lime,
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          gap: 12,
-        }}>
-        <Icon name="sparkle" size={14} color={palette.moss} />
-        <View style={{ flex: 1 }}>
-          <Text variant="bodySm" style={{ fontSize: 13, fontWeight: '700', letterSpacing: -0.2 }}>
-            Mie Gacoan 4× bulan ini.
-          </Text>
-          <Text variant="bodySm" color="rgba(28,36,24,0.65)" style={{ fontSize: 11.5, marginTop: 2 }}>
-            Total Rp 272rb. Jadikan budget bulanan?
-          </Text>
-        </View>
-      </View>
-
-      <View style={{ marginHorizontal: 18, marginTop: 22, flexDirection: 'row', gap: 8 }}>
+      {/* delete */}
+      <View style={{ paddingHorizontal: 18, paddingTop: 14 }}>
         <Pressable
-          onPress={() => haptics.tap()}
+          onPress={onDelete}
+          disabled={busy}
           style={{
-            flex: 1,
-            height: 48,
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: palette.inkFaint,
+            height: 54,
+            borderRadius: 27,
+            borderWidth: 1.5,
+            borderColor: palette.coral,
+            flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
+            gap: 8,
+            opacity: busy ? 0.5 : 1,
           }}>
-          <Text variant="bodySm" style={{ fontSize: 13, fontWeight: '600' }}>
-            Ubah kategori
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            haptics.success();
-            router.back();
-          }}
-          style={{
-            flex: 1,
-            height: 48,
-            borderRadius: 24,
-            backgroundColor: palette.moss,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          <Text variant="bodySm" color={ONDARK} style={{ fontSize: 13, fontWeight: '700' }}>
-            Simpan
+          <Text variant="button" color={palette.coral} style={{ fontSize: 15 }}>
+            {busy ? 'Menghapus…' : 'Hapus transaksi'}
           </Text>
         </Pressable>
       </View>

@@ -1,54 +1,136 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import type { CategoryDto, TransactionDto, TransactionKind, WalletDto } from '@rapih/shared';
+import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { palette, tint } from '@/theme';
-import { Screen, TabBar, Text } from '@/components/ui';
 import { Icon, type IconName } from '@/components/icons/icon';
+import { Screen, TabBar, Text } from '@/components/ui';
+import { useTransactionStore } from '@/features/activity/transaction-store';
+import { useCategoryStore } from '@/features/category/category-store';
+import { useWalletStore } from '@/features/wallet/wallet-store';
 import { RutinPanel } from '@/features/recurring/components/rutin-panel';
-import { rupiah } from '@/lib/money';
+import { groupByDay, monthSummary, signedAmount, timeLabel } from '@/features/activity/display';
 import { haptics } from '@/lib/haptics';
+import { rupiah } from '@/lib/money';
+import { palette } from '@/theme';
 
 const ONDARK = palette.onDark;
 
-type Tx = { v: string; cat: string; t: string; amt: number; src: string };
-
-const GROUPS: { day: string; sum: number; items: Tx[] }[] = [
-  {
-    day: 'Hari ini · 17 Mei',
-    sum: -382000,
-    items: [
-      { v: 'Tokopedia', cat: 'Kebutuhan', t: '10:42', amt: -185000, src: 'BCA' },
-      { v: 'Gojek · GoFood', cat: 'Senang-Senang', t: '09:14', amt: -68000, src: 'GoPay' },
-      { v: 'Starbucks Sudirman', cat: 'Senang-Senang', t: '07:51', amt: -47000, src: 'BCA' },
-      { v: 'Transfer dari Riska', cat: 'Pemasukan', t: '08:30', amt: 200000, src: 'BCA' },
-      { v: 'QRIS Alfamart', cat: 'Kebutuhan', t: '06:20', amt: -82000, src: 'OVO' },
-    ],
-  },
-  {
-    day: 'Kemarin · 16 Mei',
-    sum: -148000,
-    items: [
-      { v: 'Grab Car', cat: 'Transport', t: '21:14', amt: -68000, src: 'GoPay' },
-      { v: 'Indomaret Cikarang', cat: 'Kebutuhan', t: '18:30', amt: -56000, src: 'BCA' },
-      { v: 'Tiket bioskop · CGV', cat: 'Senang-Senang', t: '14:10', amt: -24000, src: 'OVO' },
-    ],
-  },
+type Filter = { id: 'all' | TransactionKind; label: string };
+const FILTERS: Filter[] = [
+  { id: 'all', label: 'Semua' },
+  { id: 'expense', label: 'Pengeluaran' },
+  { id: 'income', label: 'Pemasukan' },
+  { id: 'transfer', label: 'Transfer' },
 ];
 
-const FILTERS = ['Semua', 'Pengeluaran', 'Pemasukan', 'Kebutuhan', 'Senang-Senang', 'Transport'];
 const MINI = [12, 18, 24, 16, 28, 22, 32, 26, 36, 30, 38, 28];
 
-function catColor(c: string) {
-  if (c === 'Pemasukan') return palette.lime;
-  if (c === 'Kebutuhan') return tint.mint;
-  if (c === 'Senang-Senang') return tint.amber;
-  if (c === 'Transport') return tint.peach;
-  return palette.sand;
+function initial(s: string): string {
+  const t = s.trim();
+  return t ? t[0].toUpperCase() : '?';
 }
 
-function AktivitasPanel({ onTx }: { onTx: () => void }) {
+function Avatar({ color, letter }: { color: string; letter: string }) {
+  return (
+    <View
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        borderCurve: 'continuous',
+        backgroundColor: color,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      <Text variant="bodySm" color="#fff" style={{ fontSize: 13, fontWeight: '700' }}>
+        {letter}
+      </Text>
+    </View>
+  );
+}
+
+function TxRow({
+  tx,
+  category,
+  wallet,
+  onPress,
+  divider,
+}: {
+  tx: TransactionDto;
+  category?: CategoryDto;
+  wallet?: WalletDto;
+  onPress: () => void;
+  divider: boolean;
+}) {
+  const title = tx.note?.trim() || category?.name || 'Transaksi';
+  const color = category?.color ?? palette.moss;
+  const amt = signedAmount(tx);
+  const meta = [category?.name, timeLabel(tx.transacted_at), wallet?.provider_name]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        opacity: pressed ? 0.7 : 1,
+        borderBottomWidth: divider ? 1 : 0,
+        borderBottomColor: palette.inkFaint,
+      })}>
+      <Avatar color={color} letter={initial(title)} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text
+          variant="bodySm"
+          numberOfLines={1}
+          style={{ fontSize: 14, fontWeight: '500', letterSpacing: -0.2 }}>
+          {title}
+        </Text>
+        <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 11, marginTop: 1 }}>
+          {meta}
+        </Text>
+      </View>
+      <Text
+        variant="mono"
+        color={amt > 0 ? palette.cool : palette.ink}
+        style={{ fontSize: 13, fontWeight: '500' }}>
+        {rupiah(amt, { short: true })}
+      </Text>
+    </Pressable>
+  );
+}
+
+function AktivitasPanel({
+  items,
+  status,
+  categoryById,
+  walletById,
+  onTx,
+}: {
+  items: TransactionDto[];
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  categoryById: Map<string, CategoryDto>;
+  walletById: Map<string, WalletDto>;
+  onTx: (id: string) => void;
+}) {
+  const [filter, setFilter] = useState<Filter['id']>('all');
+
+  const filtered = useMemo(
+    () => (filter === 'all' ? items : items.filter((t) => t.kind === filter)),
+    [items, filter],
+  );
+  const groups = useMemo(() => groupByDay(filtered), [filtered]);
+  const summary = useMemo(() => monthSummary(items), [items]);
+
+  const isLoading = status === 'loading' && items.length === 0;
+  const isEmpty = status === 'ready' && filtered.length === 0;
+
   return (
     <View>
       {/* month summary */}
@@ -72,16 +154,11 @@ function AktivitasPanel({ onTx }: { onTx: () => void }) {
             style={{ fontSize: 10.5, letterSpacing: 1.4, fontWeight: '700' }}>
             Bulan ini
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
-            <Text variant="figureM" style={{ fontSize: 26, letterSpacing: -0.8 }}>
-              −Rp 3,2jt
-            </Text>
-            <Text variant="bodySm" color={palette.coral} style={{ fontSize: 11, fontWeight: '600' }}>
-              +18%
-            </Text>
-          </View>
+          <Text variant="figureM" style={{ fontSize: 26, letterSpacing: -0.8, marginTop: 4 }}>
+            {rupiah(-summary.expense, { short: true })}
+          </Text>
           <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 11, marginTop: 2 }}>
-            +Rp 7,8jt masuk · 142 transaksi
+            {rupiah(summary.income, { short: true })} masuk · {summary.count} transaksi
           </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 40 }}>
@@ -110,12 +187,15 @@ function AktivitasPanel({ onTx }: { onTx: () => void }) {
           gap: 6,
           flexDirection: 'row',
         }}>
-        {FILTERS.map((f, i) => {
-          const active = i === 0;
+        {FILTERS.map((f) => {
+          const active = filter === f.id;
           return (
             <Pressable
-              key={f}
-              onPress={() => haptics.select()}
+              key={f.id}
+              onPress={() => {
+                haptics.select();
+                setFilter(f.id);
+              }}
               style={{
                 paddingVertical: 7,
                 paddingHorizontal: 12,
@@ -127,84 +207,64 @@ function AktivitasPanel({ onTx }: { onTx: () => void }) {
                 variant="chip"
                 color={active ? ONDARK : palette.ink}
                 style={{ fontSize: 12, fontWeight: '600' }}>
-                {f}
+                {f.label}
               </Text>
             </Pressable>
           );
         })}
       </ScrollView>
 
-      {/* groups */}
-      {GROUPS.map((g) => (
-        <View key={g.day} style={{ marginHorizontal: 18, marginTop: 18 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: 4,
-              paddingBottom: 8,
-            }}>
-            <Text
-              variant="label"
-              color={palette.inkMute}
-              style={{ fontSize: 11, letterSpacing: 1.4, fontWeight: '700' }}>
-              {g.day}
-            </Text>
-            <Text variant="mono" color={palette.inkSoft} style={{ fontSize: 11 }}>
-              {rupiah(g.sum, { short: true })}
-            </Text>
-          </View>
-          <View style={{ backgroundColor: palette.card, borderRadius: 22, borderCurve: 'continuous' }}>
-            {g.items.map((t, i) => (
-              <Pressable
-                key={t.v}
-                onPress={onTx}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  paddingVertical: 12,
-                  paddingHorizontal: 14,
-                  borderBottomWidth: i < g.items.length - 1 ? 1 : 0,
-                  borderBottomColor: palette.inkFaint,
-                }}>
-                <View
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 12,
-                    borderCurve: 'continuous',
-                    backgroundColor: catColor(t.cat),
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                  <Text variant="bodySm" style={{ fontSize: 13, fontWeight: '700' }}>
-                    {t.v[0]}
-                  </Text>
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    variant="bodySm"
-                    numberOfLines={1}
-                    style={{ fontSize: 14, fontWeight: '500', letterSpacing: -0.2 }}>
-                    {t.v}
-                  </Text>
-                  <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 11, marginTop: 1 }}>
-                    {t.cat} · {t.t} · {t.src}
-                  </Text>
-                </View>
-                <Text
-                  variant="mono"
-                  color={t.amt > 0 ? palette.cool : palette.ink}
-                  style={{ fontSize: 13, fontWeight: '500' }}>
-                  {rupiah(t.amt, { short: true })}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+      {isLoading ? (
+        <View style={{ marginTop: 40, alignItems: 'center' }}>
+          <Text variant="bodySm" color={palette.inkMute}>
+            Memuat transaksi…
+          </Text>
         </View>
-      ))}
+      ) : isEmpty ? (
+        <View style={{ marginHorizontal: 18, marginTop: 40, alignItems: 'center' }}>
+          <Text variant="bodySm" color={palette.inkSoft} style={{ textAlign: 'center' }}>
+            {filter === 'all'
+              ? 'Belum ada transaksi. Catat yang pertama lewat tombol +.'
+              : 'Tidak ada transaksi di filter ini.'}
+          </Text>
+        </View>
+      ) : (
+        groups.map((g) => (
+          <View key={g.key} style={{ marginHorizontal: 18, marginTop: 18 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 4,
+                paddingBottom: 8,
+              }}>
+              <Text
+                variant="label"
+                color={palette.inkMute}
+                style={{ fontSize: 11, letterSpacing: 1.4, fontWeight: '700' }}>
+                {g.header}
+              </Text>
+              <Text variant="mono" color={palette.inkSoft} style={{ fontSize: 11 }}>
+                {rupiah(g.sum, { short: true })}
+              </Text>
+            </View>
+            <View
+              style={{ backgroundColor: palette.card, borderRadius: 22, borderCurve: 'continuous' }}>
+              {g.items.map((t, i) => (
+                <TxRow
+                  key={t.id}
+                  tx={t}
+                  category={t.category_id ? categoryById.get(t.category_id) : undefined}
+                  wallet={walletById.get(t.wallet_id)}
+                  onPress={() => onTx(t.id)}
+                  divider={i < g.items.length - 1}
+                />
+              ))}
+            </View>
+          </View>
+        ))
+      )}
     </View>
   );
 }
@@ -218,94 +278,132 @@ export function TransaksiScreen() {
   );
   const [addOpen, setAddOpen] = useState(false);
 
+  const { items, status, fetch: fetchTx } = useTransactionStore();
+  const categories = useCategoryStore((s) => s.items);
+  const fetchCategories = useCategoryStore((s) => s.fetch);
+  const wallets = useWalletStore((s) => s.wallets);
+  const fetchWallets = useWalletStore((s) => s.fetch);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only run once on mount
+  useEffect(() => {
+    void fetchTx();
+    if (categories.length === 0) void fetchCategories();
+    if (wallets.length === 0) void fetchWallets();
+  }, []);
+
+  const categoryById = useMemo(
+    () => new Map(categories.map((c) => [c.id, c])),
+    [categories],
+  );
+  const walletById = useMemo(() => new Map(wallets.map((w) => [w.id, w])), [wallets]);
+
   const go = (to: Href) => {
     setAddOpen(false);
     haptics.tap();
     router.push(to);
   };
+  const goTx = (id: string) =>
+    router.push(`/(app)/transaksi-detail?id=${encodeURIComponent(id)}` as Href);
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.bg }}>
-      <Screen background={palette.bg} bottomInset={96}>
-        {/* header */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            paddingHorizontal: 22,
-          }}>
-          <View>
-            <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 11 }}>
-              Mei 2026
-            </Text>
-            <Text variant="displayM" style={{ fontSize: 36, letterSpacing: -1.6, lineHeight: 38, marginTop: 4 }}>
-              Transaksi
-            </Text>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={status === 'loading'}
+            onRefresh={() => void fetchTx()}
+          />
+        }>
+        <Screen background={palette.bg} bottomInset={96}>
+          {/* header */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
+              paddingHorizontal: 22,
+            }}>
+            <View>
+              <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 11 }}>
+                Mei 2026
+              </Text>
+              <Text
+                variant="displayM"
+                style={{ fontSize: 36, letterSpacing: -1.6, lineHeight: 38, marginTop: 4 }}>
+                Transaksi
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {(['search', 'filter'] as const).map((n) => (
+                <Pressable
+                  key={n}
+                  onPress={() => haptics.tap()}
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 38,
+                    backgroundColor: palette.card,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <Icon name={n} size={n === 'search' ? 16 : 14} color={palette.ink} />
+                </Pressable>
+              ))}
+            </View>
           </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {(['search', 'filter'] as const).map((n) => (
-              <Pressable
-                key={n}
-                onPress={() => haptics.tap()}
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 38,
-                  backgroundColor: palette.card,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                <Icon name={n} size={n === 'search' ? 16 : 14} color={palette.ink} />
-              </Pressable>
-            ))}
+
+          {/* segmented */}
+          <View
+            style={{
+              marginHorizontal: 18,
+              marginTop: 18,
+              flexDirection: 'row',
+              gap: 4,
+              backgroundColor: palette.card,
+              borderRadius: 999,
+              padding: 4,
+            }}>
+            {(['aktivitas', 'rutin'] as const).map((m) => {
+              const on = mode === m;
+              return (
+                <Pressable
+                  key={m}
+                  onPress={() => {
+                    haptics.select();
+                    setMode(m);
+                  }}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 9,
+                    borderRadius: 999,
+                    alignItems: 'center',
+                    backgroundColor: on ? palette.moss : 'transparent',
+                  }}>
+                  <Text
+                    variant="chip"
+                    color={on ? ONDARK : palette.inkSoft}
+                    style={{ fontSize: 12.5, fontWeight: '700' }}>
+                    {m === 'aktivitas' ? 'Aktivitas' : 'Rutin'}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-        </View>
 
-        {/* segmented */}
-        <View
-          style={{
-            marginHorizontal: 18,
-            marginTop: 18,
-            flexDirection: 'row',
-            gap: 4,
-            backgroundColor: palette.card,
-            borderRadius: 999,
-            padding: 4,
-          }}>
-          {(['aktivitas', 'rutin'] as const).map((m) => {
-            const on = mode === m;
-            return (
-              <Pressable
-                key={m}
-                onPress={() => {
-                  haptics.select();
-                  setMode(m);
-                }}
-                style={{
-                  flex: 1,
-                  paddingVertical: 9,
-                  borderRadius: 999,
-                  alignItems: 'center',
-                  backgroundColor: on ? palette.moss : 'transparent',
-                }}>
-                <Text
-                  variant="chip"
-                  color={on ? ONDARK : palette.inkSoft}
-                  style={{ fontSize: 12.5, fontWeight: '700' }}>
-                  {m === 'aktivitas' ? 'Aktivitas' : 'Rutin'}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {mode === 'aktivitas' ? (
-          <AktivitasPanel onTx={() => go('/(app)/transaksi-detail' as Href)} />
-        ) : (
-          <RutinPanel />
-        )}
-      </Screen>
+          {mode === 'aktivitas' ? (
+            <AktivitasPanel
+              items={items}
+              status={status}
+              categoryById={categoryById}
+              walletById={walletById}
+              onTx={goTx}
+            />
+          ) : (
+            <RutinPanel />
+          )}
+        </Screen>
+      </ScrollView>
 
       {/* FAB — in Aktivitas mode opens an inline chooser; in Rutin mode
           there's only one add destination so it goes there directly. */}
@@ -356,10 +454,22 @@ export function TransaksiScreen() {
               paddingVertical: 6,
               boxShadow: '0 12px 30px rgba(10,10,14,0.18)',
             }}>
-            {([
-              { l: 'Tulis manual', s: 'Catat sendiri', i: 'plus' as IconName, to: '/(app)/tambah-transaksi' },
-              { l: 'Scan struk', s: 'OCR otomatis', i: 'image' as IconName, to: '/(app)/scan-struk' },
-            ]).map((a, i) => (
+            {(
+              [
+                {
+                  l: 'Tulis manual',
+                  s: 'Catat sendiri',
+                  i: 'plus' as IconName,
+                  to: '/(app)/tambah-transaksi',
+                },
+                {
+                  l: 'Scan struk',
+                  s: 'OCR otomatis',
+                  i: 'image' as IconName,
+                  to: '/(app)/scan-struk',
+                },
+              ]
+            ).map((a, i) => (
               <Pressable
                 key={a.l}
                 onPress={() => go(a.to as Href)}
@@ -387,7 +497,10 @@ export function TransaksiScreen() {
                   <Text variant="bodySm" style={{ fontSize: 13.5, fontWeight: '600' }}>
                     {a.l}
                   </Text>
-                  <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 11, marginTop: 1 }}>
+                  <Text
+                    variant="bodySm"
+                    color={palette.inkMute}
+                    style={{ fontSize: 11, marginTop: 1 }}>
                     {a.s}
                   </Text>
                 </View>
