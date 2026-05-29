@@ -1,31 +1,27 @@
-import { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import type { CreateBudgetBody } from '@rapih/shared';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
 
-import { palette, tint } from '@/theme';
-import { Caret, Screen, Text } from '@/components/ui';
 import { Icon } from '@/components/icons/icon';
-import { rupiah } from '@/lib/money';
+import { Screen, Text } from '@/components/ui';
+import { useBudgetStore } from '@/features/budget/budget-store';
+import { useCategoryStore } from '@/features/category/category-store';
 import { haptics } from '@/lib/haptics';
+import { rupiah } from '@/lib/money';
+import { palette, tint } from '@/theme';
 
 const ONDARK = palette.onDark;
 
-type Preset = {
-  l: string;
-  emoji: string;
-  /** soft tile background tint */
-  tile: string;
-  /** ink + bar color */
-  ink: string;
-};
+type Preset = { l: string; emoji: string; tile: string; color: string };
 
 const PRESETS: Preset[] = [
-  { l: 'Kebutuhan', emoji: '🏡', tile: tint.mint, ink: tint.mintInk },
-  { l: 'Senang-Senang', emoji: '🎉', tile: tint.amber, ink: tint.amberInk },
-  { l: 'Transport', emoji: '🛵', tile: tint.peach, ink: tint.peachInk },
-  { l: 'Kopi & jajan', emoji: '☕', tile: palette.limeSoft, ink: palette.moss },
-  { l: 'Hadiah', emoji: '🎁', tile: tint.rose, ink: tint.roseInk },
-  { l: 'Lainnya', emoji: '✨', tile: tint.iris, ink: tint.irisInk },
+  { l: 'Kebutuhan', emoji: '🏡', tile: tint.mint, color: tint.mintInk },
+  { l: 'Senang-Senang', emoji: '🎉', tile: tint.amber, color: tint.amberInk },
+  { l: 'Transport', emoji: '🛵', tile: tint.peach, color: tint.peachInk },
+  { l: 'Kopi & jajan', emoji: '☕', tile: palette.limeSoft, color: palette.moss },
+  { l: 'Hadiah', emoji: '🎁', tile: tint.rose, color: tint.roseInk },
+  { l: 'Lainnya', emoji: '✨', tile: tint.iris, color: tint.irisInk },
 ];
 
 const SAMPLE_CAPS = [
@@ -42,12 +38,62 @@ function parseDigits(s: string): number {
 
 export function TambahBudgetScreen() {
   const router = useRouter();
+  const create = useBudgetStore((s) => s.create);
+  const categoryItems = useCategoryStore((s) => s.items);
+  const fetchCategories = useCategoryStore((s) => s.fetch);
+
   const [presetIdx, setPresetIdx] = useState(1);
+  const [name, setName] = useState(PRESETS[1].l);
   const [capIdx, setCapIdx] = useState<number | null>(1);
   const [customRaw, setCustomRaw] = useState('');
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+
   const sel = PRESETS[presetIdx];
   const customVal = parseDigits(customRaw);
   const cap = capIdx !== null ? SAMPLE_CAPS[capIdx].v : customVal;
+
+  const expenseCategories = categoryItems.filter((c) => c.kind === 'expense');
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only run once on mount
+  useEffect(() => {
+    if (categoryItems.length === 0) void fetchCategories();
+  }, []);
+
+  const toggleCategory = (cid: string) => {
+    haptics.select();
+    setCategoryIds((prev) =>
+      prev.includes(cid) ? prev.filter((x) => x !== cid) : [...prev, cid],
+    );
+  };
+
+  const onSave = async () => {
+    if (busy) return;
+    if (!name.trim()) {
+      Alert.alert('Nama budget wajib diisi');
+      return;
+    }
+    if (cap <= 0) {
+      Alert.alert('Plafon belum diisi', 'Tentukan plafon bulanan dulu.');
+      return;
+    }
+    const body: CreateBudgetBody = {
+      name: name.trim(),
+      icon: sel.emoji,
+      color: sel.color,
+      amount: String(cap),
+      category_ids: categoryIds,
+    };
+    setBusy(true);
+    try {
+      await create(body);
+      haptics.success();
+      router.back();
+    } catch (err) {
+      Alert.alert('Gagal', err instanceof Error ? err.message : 'Gagal menyimpan budget.');
+      setBusy(false);
+    }
+  };
 
   return (
     <Screen background={palette.bg} bottomInset={28}>
@@ -91,19 +137,10 @@ export function TambahBudgetScreen() {
           borderCurve: 'continuous',
           backgroundColor: palette.card,
         }}>
-        <Text
-          variant="eyebrow"
-          color={palette.inkMute}
-          style={{ fontSize: 10.5, letterSpacing: 1.5 }}>
+        <Text variant="eyebrow" color={palette.inkMute} style={{ fontSize: 10.5, letterSpacing: 1.5 }}>
           Pratinjau
         </Text>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            marginTop: 12,
-          }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 }}>
           <View
             style={{
               width: 44,
@@ -121,13 +158,11 @@ export function TambahBudgetScreen() {
               variant="bodySm"
               numberOfLines={1}
               style={{ fontSize: 14, fontWeight: '600', letterSpacing: -0.2 }}>
-              {sel.l}
+              {name.trim() || sel.l}
             </Text>
-            <Text
-              variant="bodySm"
-              color={palette.inkMute}
-              style={{ fontSize: 11, marginTop: 2 }}>
-              Plafon {cap > 0 ? rupiah(cap, { short: true }) : '—'} · bulanan
+            <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 11, marginTop: 2 }}>
+              Plafon {cap > 0 ? rupiah(cap, { short: true }) : '—'} ·{' '}
+              {categoryIds.length === 0 ? 'semua pengeluaran' : `${categoryIds.length} kategori`}
             </Text>
           </View>
         </View>
@@ -138,13 +173,7 @@ export function TambahBudgetScreen() {
         <Text
           variant="label"
           color={palette.inkMute}
-          style={{
-            fontSize: 11,
-            letterSpacing: 1.4,
-            fontWeight: '700',
-            paddingHorizontal: 4,
-            paddingBottom: 8,
-          }}>
+          style={{ fontSize: 11, letterSpacing: 1.4, fontWeight: '700', paddingHorizontal: 4, paddingBottom: 8 }}>
           Nama budget
         </Text>
         <View
@@ -158,28 +187,24 @@ export function TambahBudgetScreen() {
             alignItems: 'center',
           }}>
           <Text style={{ fontSize: 16, marginRight: 10, lineHeight: 22 }}>{sel.emoji}</Text>
-          <Text
-            variant="bodySm"
-            style={{ fontSize: 15, fontWeight: '500', letterSpacing: -0.2 }}>
-            {sel.l}
-          </Text>
-          <Caret height={16} />
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder={sel.l}
+            placeholderTextColor={palette.inkMute}
+            maxLength={80}
+            style={{ flex: 1, fontSize: 15, fontWeight: '500', letterSpacing: -0.2, color: palette.ink, padding: 0 }}
+          />
         </View>
       </View>
 
-      {/* category preset picker */}
+      {/* icon preset picker */}
       <View style={{ marginHorizontal: 18, marginTop: 18 }}>
         <Text
           variant="label"
           color={palette.inkMute}
-          style={{
-            fontSize: 11,
-            letterSpacing: 1.4,
-            fontWeight: '700',
-            paddingHorizontal: 4,
-            paddingBottom: 8,
-          }}>
-          Kategori
+          style={{ fontSize: 11, letterSpacing: 1.4, fontWeight: '700', paddingHorizontal: 4, paddingBottom: 8 }}>
+          Ikon
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {PRESETS.map((p, i) => {
@@ -189,6 +214,8 @@ export function TambahBudgetScreen() {
                 key={p.l}
                 onPress={() => {
                   haptics.select();
+                  // Adopt the preset label only if the user hasn't typed a custom name.
+                  setName((cur) => (cur === PRESETS[presetIdx].l || cur.trim() === '' ? p.l : cur));
                   setPresetIdx(i);
                 }}
                 style={{
@@ -220,13 +247,7 @@ export function TambahBudgetScreen() {
         <Text
           variant="label"
           color={palette.inkMute}
-          style={{
-            fontSize: 11,
-            letterSpacing: 1.4,
-            fontWeight: '700',
-            paddingHorizontal: 4,
-            paddingBottom: 8,
-          }}>
+          style={{ fontSize: 11, letterSpacing: 1.4, fontWeight: '700', paddingHorizontal: 4, paddingBottom: 8 }}>
           Plafon bulanan
         </Text>
         <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -249,10 +270,7 @@ export function TambahBudgetScreen() {
                   alignItems: 'center',
                   boxShadow: on ? undefined : `0 0 0 1px ${palette.inkFaint}`,
                 }}>
-                <Text
-                  variant="mono"
-                  color={on ? palette.moss : palette.ink}
-                  style={{ fontSize: 12, fontWeight: '700' }}>
+                <Text variant="mono" color={on ? palette.moss : palette.ink} style={{ fontSize: 12, fontWeight: '700' }}>
                   {c.l}
                 </Text>
               </Pressable>
@@ -277,10 +295,7 @@ export function TambahBudgetScreen() {
                 ? `0 0 0 1.5px ${palette.moss}`
                 : `0 0 0 1px ${palette.inkFaint}`,
           }}>
-          <Text
-            variant="mono"
-            color={palette.inkMute}
-            style={{ fontSize: 12, fontWeight: '700' }}>
+          <Text variant="mono" color={palette.inkMute} style={{ fontSize: 12, fontWeight: '700' }}>
             Rp
           </Text>
           <TextInput
@@ -293,37 +308,52 @@ export function TambahBudgetScreen() {
             keyboardType="number-pad"
             placeholder="Ketik plafon sendiri"
             placeholderTextColor={palette.inkMute}
-            style={{
-              flex: 1,
-              fontFamily: 'Mono-500',
-              fontSize: 13,
-              color: palette.ink,
-              padding: 0,
-            }}
+            style={{ flex: 1, fontFamily: 'Mono-500', fontSize: 13, color: palette.ink, padding: 0 }}
           />
         </View>
       </View>
 
-      {/* AI hint */}
-      <View
-        style={{
-          marginHorizontal: 18,
-          marginTop: 14,
-          paddingVertical: 12,
-          paddingHorizontal: 14,
-          borderRadius: 16,
-          borderCurve: 'continuous',
-          backgroundColor: palette.limeSoft,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-        }}>
-        <Icon name="sparkle" size={14} color={palette.moss} />
+      {/* category tracking */}
+      <View style={{ marginTop: 18 }}>
+        <Text
+          variant="label"
+          color={palette.inkMute}
+          style={{ fontSize: 11, letterSpacing: 1.4, fontWeight: '700', paddingHorizontal: 22, paddingBottom: 8 }}>
+          Lacak kategori {categoryIds.length > 0 ? `(${categoryIds.length})` : '· semua pengeluaran'}
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 18, gap: 6 }}>
+          {expenseCategories.map((c) => {
+            const on = categoryIds.includes(c.id);
+            return (
+              <Pressable
+                key={c.id}
+                onPress={() => toggleCategory(c.id)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 7,
+                  paddingVertical: 9,
+                  paddingHorizontal: 13,
+                  borderRadius: 999,
+                  backgroundColor: on ? palette.moss : palette.card,
+                  boxShadow: on ? undefined : `0 0 0 1px ${palette.inkFaint}`,
+                }}>
+                <View style={{ width: 9, height: 9, borderRadius: 9, backgroundColor: c.color }} />
+                <Text variant="chip" color={on ? ONDARK : palette.ink} style={{ fontSize: 12, fontWeight: '600' }}>
+                  {c.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
         <Text
           variant="bodySm"
-          color={palette.moss}
-          style={{ flex: 1, fontSize: 11.5, lineHeight: 17 }}>
-          Rapih bakal kasih notif kalau budget ini sudah 80% penuh.
+          color={palette.inkMute}
+          style={{ fontSize: 11, lineHeight: 16, paddingHorizontal: 22, marginTop: 8 }}>
+          Kosongkan untuk melacak semua pengeluaran bulan ini.
         </Text>
       </View>
 
@@ -332,10 +362,8 @@ export function TambahBudgetScreen() {
       {/* CTA */}
       <View style={{ paddingHorizontal: 18, paddingTop: 14 }}>
         <Pressable
-          onPress={() => {
-            haptics.success();
-            router.back();
-          }}
+          onPress={onSave}
+          disabled={busy}
           style={{
             height: 54,
             borderRadius: 27,
@@ -344,10 +372,11 @@ export function TambahBudgetScreen() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
+            opacity: busy ? 0.5 : 1,
           }}>
           <Icon name="check" size={14} color={ONDARK} />
           <Text variant="button" color={ONDARK} style={{ fontSize: 15 }}>
-            Buat budget
+            {busy ? 'Menyimpan…' : 'Buat budget'}
           </Text>
         </Pressable>
       </View>

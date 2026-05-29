@@ -1,40 +1,15 @@
-import { Pressable, View } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import type { BudgetDto } from '@rapih/shared';
+import { useEffect, useMemo } from 'react';
+import { Alert, Pressable, View } from 'react-native';
 
-import { palette, tint } from '@/theme';
-import { Glow, Text } from '@/components/ui';
 import { Icon } from '@/components/icons/icon';
-import { rupiah } from '@/lib/money';
+import { Glow, Text } from '@/components/ui';
+import { useBudgetStore } from '@/features/budget/budget-store';
 import { haptics } from '@/lib/haptics';
+import { rupiah } from '@/lib/money';
+import { palette, tint } from '@/theme';
 
 const ONDARK = palette.onDark;
-
-type Bucket = {
-  name: string;
-  sub: string;
-  /** spent so far this month, in rupiah */
-  amt: number;
-  /** envelope cap, in rupiah */
-  cap: number;
-  emoji: string;
-  /** tile background tint */
-  tile: string;
-  /** progress-bar fill */
-  bar: string;
-};
-
-const BUCKETS: Bucket[] = [
-  { name: 'Kebutuhan',     sub: 'Pokok bulanan',           amt: 3_200_000, cap: 4_500_000, emoji: '🏡', tile: tint.mint,        bar: tint.mintInk },
-  { name: 'Senang-Senang', sub: 'Hiburan & nongkrong',     amt:   850_000, cap: 1_200_000, emoji: '🎉', tile: tint.amber,       bar: tint.gold },
-  { name: 'Transport',     sub: 'Bensin & ojol',           amt:   480_000, cap:   800_000, emoji: '🛵', tile: tint.peach,       bar: tint.peachInk },
-  { name: 'Kopi & jajan',  sub: 'Self-control biar adem',  amt:   260_000, cap:   300_000, emoji: '☕', tile: palette.limeSoft, bar: palette.cool },
-  { name: 'Hadiah',        sub: 'Untuk orang lain',        amt:   200_000, cap:   500_000, emoji: '🎁', tile: tint.rose,        bar: tint.roseInk },
-];
-
-const TOTAL_USED = BUCKETS.reduce((s, b) => s + b.amt, 0);
-const TOTAL_CAP = BUCKETS.reduce((s, b) => s + b.cap, 0);
-const NOT_ALLOC = 1_245_000;
-const PCT_TOTAL = Math.round((TOTAL_USED / TOTAL_CAP) * 100);
 
 function flagOf(p: number): { l: string; c: string; bg: string } {
   if (p >= 100) return { l: 'Habis', c: palette.coral, bg: tint.peach };
@@ -45,18 +20,25 @@ function flagOf(p: number): { l: string; c: string; bg: string } {
 function BucketRow({
   b,
   last,
-  onPress,
+  onLongPress,
 }: {
-  b: Bucket;
+  b: BudgetDto;
   last: boolean;
-  onPress: () => void;
+  onLongPress: () => void;
 }) {
-  const p = Math.min(100, Math.round((b.amt / b.cap) * 100));
-  const sisa = Math.max(0, b.cap - b.amt);
-  const f = flagOf(p);
+  const spent = Number(b.spent);
+  const cap = Number(b.amount);
+  const p = Math.min(100, Math.round(b.progress * 100));
+  const sisa = Math.max(0, Number(b.remaining));
+  const f = flagOf(Math.round(b.progress * 100));
+  const sub =
+    b.category_ids.length === 0
+      ? 'Semua pengeluaran'
+      : `${b.category_ids.length} kategori`;
+
   return (
     <Pressable
-      onPress={onPress}
+      onLongPress={onLongPress}
       style={{
         paddingVertical: 14,
         paddingHorizontal: 14,
@@ -70,11 +52,11 @@ function BucketRow({
             height: 40,
             borderRadius: 12,
             borderCurve: 'continuous',
-            backgroundColor: b.tile,
+            backgroundColor: `${b.color}22`,
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-          <Text style={{ fontSize: 18 }}>{b.emoji}</Text>
+          <Text style={{ fontSize: 18 }}>{b.icon}</Text>
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text
@@ -83,36 +65,28 @@ function BucketRow({
             style={{ fontSize: 13.5, fontWeight: '600', letterSpacing: -0.2 }}>
             {b.name}
           </Text>
-          <Text
-            variant="bodySm"
-            color={palette.inkMute}
-            style={{ fontSize: 11, marginTop: 2 }}>
-            {b.sub}
+          <Text variant="bodySm" color={palette.inkMute} style={{ fontSize: 11, marginTop: 2 }}>
+            {sub}
           </Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <Text variant="mono" style={{ fontSize: 12.5, fontWeight: '600' }}>
-            {rupiah(b.amt, { short: true })}
+            {rupiah(spent, { short: true })}
           </Text>
           <Text variant="mono" color={palette.inkMute} style={{ fontSize: 10, marginTop: 2 }}>
-            / {rupiah(b.cap, { short: true }).replace('Rp ', '')}
+            / {rupiah(cap, { short: true }).replace('Rp ', '')}
           </Text>
         </View>
       </View>
 
       <View style={{ marginTop: 10 }}>
         <View
-          style={{
-            height: 6,
-            borderRadius: 6,
-            backgroundColor: palette.sand,
-            overflow: 'hidden',
-          }}>
+          style={{ height: 6, borderRadius: 6, backgroundColor: palette.sand, overflow: 'hidden' }}>
           <View
             style={{
               height: '100%',
               width: `${p}%`,
-              backgroundColor: p >= 100 ? palette.coral : b.bar,
+              backgroundColor: p >= 100 ? palette.coral : b.color,
               borderRadius: 6,
             }}
           />
@@ -126,20 +100,12 @@ function BucketRow({
           }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View
-              style={{
-                paddingVertical: 2,
-                paddingHorizontal: 7,
-                borderRadius: 999,
-                backgroundColor: f.bg,
-              }}>
+              style={{ paddingVertical: 2, paddingHorizontal: 7, borderRadius: 999, backgroundColor: f.bg }}>
               <Text variant="chip" color={f.c} style={{ fontSize: 9.5, fontWeight: '700' }}>
                 {f.l}
               </Text>
             </View>
-            <Text
-              variant="mono"
-              color={palette.inkMute}
-              style={{ fontSize: 10.5, fontWeight: '600' }}>
+            <Text variant="mono" color={palette.inkMute} style={{ fontSize: 10.5, fontWeight: '600' }}>
               {p}%
             </Text>
           </View>
@@ -156,13 +122,32 @@ function BucketRow({
  * Budget content (envelope buckets). Rendered as the "Budget" mode of the
  * Budget hub. Standalone — no header, no Screen, no TabBar.
  */
-export function BudgetPanel({ onRow }: { onRow?: () => void } = {}) {
-  const router = useRouter();
-  const tap = onRow ?? (() => haptics.tap());
-  const goAdd = () => {
+export function BudgetPanel({ goAdd }: { goAdd: () => void }) {
+  const { budgets, status, fetch, remove } = useBudgetStore();
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only run once on mount
+  useEffect(() => {
+    void fetch();
+  }, []);
+
+  const totals = useMemo(() => {
+    const spent = budgets.reduce((s, b) => s + Number(b.spent), 0);
+    const cap = budgets.reduce((s, b) => s + Number(b.amount), 0);
+    const remaining = budgets.reduce((s, b) => s + Math.max(0, Number(b.remaining)), 0);
+    return { spent, cap, remaining, pct: cap > 0 ? Math.round((spent / cap) * 100) : 0 };
+  }, [budgets]);
+
+  const onDelete = (b: BudgetDto) => {
     haptics.tap();
-    router.push('/(app)/tambah-budget' as Href);
+    Alert.alert('Hapus budget?', `"${b.name}" akan dihapus.`, [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Hapus', style: 'destructive', onPress: () => void remove(b.id) },
+    ]);
   };
+
+  const isLoading = status === 'loading' && budgets.length === 0;
+  const isEmpty = status === 'ready' && budgets.length === 0;
+
   return (
     <View style={{ paddingBottom: 8 }}>
       {/* hero — total alokasi */}
@@ -177,30 +162,18 @@ export function BudgetPanel({ onRow }: { onRow?: () => void } = {}) {
           backgroundColor: palette.moss,
           overflow: 'hidden',
         }}>
-        <Glow
-          size={150}
-          color={palette.lime}
-          opacity={0.18}
-          fadeAt={0.7}
-          position={{ top: -40, right: -40 }}
-        />
-        <Text
-          variant="eyebrow"
-          color={palette.lime}
-          style={{ fontSize: 10.5, letterSpacing: 1.5 }}>
-          Dipakai · Mei
+        <Glow size={150} color={palette.lime} opacity={0.18} fadeAt={0.7} position={{ top: -40, right: -40 }} />
+        <Text variant="eyebrow" color={palette.lime} style={{ fontSize: 10.5, letterSpacing: 1.5 }}>
+          Dipakai bulan ini
         </Text>
         <Text
           variant="figureXL"
           color={ONDARK}
           style={{ fontSize: 40, letterSpacing: -1.8, lineHeight: 42, marginTop: 6 }}>
-          {rupiah(TOTAL_USED, { short: true })}
+          {rupiah(totals.spent, { short: true })}
         </Text>
-        <Text
-          variant="bodySm"
-          color="rgba(240,240,232,0.55)"
-          style={{ fontSize: 11, marginTop: 4 }}>
-          dari plafon {rupiah(TOTAL_CAP, { short: true })} · {PCT_TOTAL}% bulan ini
+        <Text variant="bodySm" color="rgba(240,240,232,0.55)" style={{ fontSize: 11, marginTop: 4 }}>
+          dari plafon {rupiah(totals.cap, { short: true })} · {totals.pct}%
         </Text>
 
         <View
@@ -214,8 +187,8 @@ export function BudgetPanel({ onRow }: { onRow?: () => void } = {}) {
           <View
             style={{
               height: '100%',
-              width: `${PCT_TOTAL}%`,
-              backgroundColor: palette.lime,
+              width: `${Math.min(100, totals.pct)}%`,
+              backgroundColor: totals.pct >= 100 ? palette.coral : palette.lime,
               borderRadius: 8,
             }}
           />
@@ -223,14 +196,12 @@ export function BudgetPanel({ onRow }: { onRow?: () => void } = {}) {
 
         <View style={{ flexDirection: 'row', gap: 14, marginTop: 14 }}>
           {[
-            { l: 'Belum alokasi', v: rupiah(NOT_ALLOC, { short: true }), c: tint.amber },
-            { l: 'Envelope', v: `${BUCKETS.length} aktif`, c: ONDARK },
-            { l: '% gaji', v: '58%', c: ONDARK },
+            { l: 'Envelope', v: `${budgets.length} aktif` },
+            { l: 'Plafon', v: rupiah(totals.cap, { short: true }) },
+            { l: 'Sisa', v: rupiah(totals.remaining, { short: true }) },
           ].map((s, i) => (
             <View key={s.l} style={{ flex: 1, flexDirection: 'row', gap: 14 }}>
-              {i > 0 && (
-                <View style={{ width: 1, backgroundColor: 'rgba(240,240,232,0.15)' }} />
-              )}
+              {i > 0 && <View style={{ width: 1, backgroundColor: 'rgba(240,240,232,0.15)' }} />}
               <View style={{ flex: 1 }}>
                 <Text
                   variant="label"
@@ -238,7 +209,7 @@ export function BudgetPanel({ onRow }: { onRow?: () => void } = {}) {
                   style={{ fontSize: 10, letterSpacing: 0.8, fontWeight: '600' }}>
                   {s.l}
                 </Text>
-                <Text variant="mono" color={s.c} style={{ fontSize: 13, marginTop: 3 }}>
+                <Text variant="mono" color={ONDARK} style={{ fontSize: 13, marginTop: 3 }}>
                   {s.v}
                 </Text>
               </View>
@@ -247,75 +218,51 @@ export function BudgetPanel({ onRow }: { onRow?: () => void } = {}) {
         </View>
       </View>
 
-      {/* AI nudge */}
-      <Pressable
-        onPress={() => haptics.tap()}
-        style={{
-          marginHorizontal: 18,
-          marginTop: 12,
-          paddingVertical: 14,
-          paddingHorizontal: 16,
-          borderRadius: 18,
-          borderCurve: 'continuous',
-          backgroundColor: palette.lime,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-        }}>
-        <Icon name="sparkle" size={14} color={palette.moss} />
-        <View style={{ flex: 1 }}>
-          <Text variant="bodySm" style={{ fontSize: 13, fontWeight: '700', letterSpacing: -0.2 }}>
-            Rp 1,2jt belum dialokasi.
-          </Text>
-          <Text
-            variant="bodySm"
-            color="rgba(10,20,10,0.65)"
-            style={{ fontSize: 11.5, marginTop: 2 }}>
-            Rapih bisa bagi otomatis ke 5 envelope kamu.
-          </Text>
-        </View>
-        <Icon name="arrowR" size={14} color={palette.ink} />
-      </Pressable>
-
       {/* envelope list */}
-      <View style={{ marginHorizontal: 18, marginTop: 18 }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 4,
-            paddingBottom: 8,
-          }}>
-          <Text
-            variant="label"
-            color={palette.inkMute}
-            style={{ fontSize: 11, letterSpacing: 1.4, fontWeight: '700' }}>
-            Envelope bulan ini
-          </Text>
-          <Text
-            variant="mono"
-            color={palette.inkMute}
-            style={{ fontSize: 10.5, fontWeight: '600' }}>
-            {BUCKETS.length} aktif
+      {isLoading ? (
+        <View style={{ marginTop: 40, alignItems: 'center' }}>
+          <Text variant="bodySm" color={palette.inkMute}>
+            Memuat budget…
           </Text>
         </View>
-        <View
-          style={{
-            backgroundColor: palette.card,
-            borderRadius: 22,
-            borderCurve: 'continuous',
-          }}>
-          {BUCKETS.map((b, i) => (
-            <BucketRow
-              key={b.name}
-              b={b}
-              last={i === BUCKETS.length - 1}
-              onPress={tap}
-            />
-          ))}
+      ) : isEmpty ? (
+        <View style={{ marginHorizontal: 18, marginTop: 32, alignItems: 'center' }}>
+          <Text variant="bodySm" color={palette.inkSoft} style={{ textAlign: 'center' }}>
+            Belum ada budget. Bikin envelope pertama buat ngatur pengeluaran.
+          </Text>
         </View>
-      </View>
+      ) : (
+        <View style={{ marginHorizontal: 18, marginTop: 18 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 4,
+              paddingBottom: 8,
+            }}>
+            <Text
+              variant="label"
+              color={palette.inkMute}
+              style={{ fontSize: 11, letterSpacing: 1.4, fontWeight: '700' }}>
+              Envelope bulan ini
+            </Text>
+            <Text variant="mono" color={palette.inkMute} style={{ fontSize: 10.5, fontWeight: '600' }}>
+              {budgets.length} aktif
+            </Text>
+          </View>
+          <View style={{ backgroundColor: palette.card, borderRadius: 22, borderCurve: 'continuous' }}>
+            {budgets.map((b, i) => (
+              <BucketRow
+                key={b.id}
+                b={b}
+                last={i === budgets.length - 1}
+                onLongPress={() => onDelete(b)}
+              />
+            ))}
+          </View>
+        </View>
+      )}
 
       {/* dashed add */}
       <Pressable
@@ -335,10 +282,7 @@ export function BudgetPanel({ onRow }: { onRow?: () => void } = {}) {
           gap: 8,
         }}>
         <Icon name="plus" size={14} color={palette.inkSoft} />
-        <Text
-          variant="bodySm"
-          color={palette.inkSoft}
-          style={{ fontSize: 13, fontWeight: '500' }}>
+        <Text variant="bodySm" color={palette.inkSoft} style={{ fontSize: 13, fontWeight: '500' }}>
           Tambah envelope baru
         </Text>
       </Pressable>

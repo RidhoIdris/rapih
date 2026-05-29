@@ -31,6 +31,11 @@ export function BudgetScreen() {
   const { mode: modeParam } = useLocalSearchParams<{ mode?: string }>();
   const [mode, setMode] = useState<Mode>(modeParam === 'goal' ? 'goal' : 'budget');
 
+  const goAdd = (m: Mode) => {
+    haptics.tap();
+    router.push((m === 'goal' ? '/(app)/tambah-goal' : '/(app)/tambah-budget') as Href);
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: palette.bg }}>
       <Screen background={palette.bg} bottomInset={96}>
@@ -109,19 +114,16 @@ export function BudgetScreen() {
           })}
         </View>
 
-        {mode === 'budget' ? <BudgetPanel /> : <GoalsPanel />}
+        {mode === 'budget' ? (
+          <BudgetPanel goAdd={() => goAdd('budget')} />
+        ) : (
+          <GoalsPanel goAdd={() => goAdd('goal')} />
+        )}
       </Screen>
 
       {/* FAB — different add destination per mode */}
       <Pressable
-        onPress={() => {
-          haptics.tap();
-          router.push(
-            (mode === 'goal'
-              ? '/(app)/tambah-goal'
-              : '/(app)/tambah-budget') as Href,
-          );
-        }}
+        onPress={() => goAdd(mode)}
         style={{
           position: 'absolute',
           right: 20,
